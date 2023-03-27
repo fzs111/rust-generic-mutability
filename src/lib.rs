@@ -208,3 +208,19 @@ where
         }
     }
 }
+
+
+
+/// ```compile_fail
+/// let mut string = String::from("asd");
+///
+/// let mut maybe_mut = MaybeMut::from(&mut string);
+///
+/// let mut_ref = maybe_mut.as_mut();
+///
+/// assert_eq!(string, String::from("asdf"));
+///
+/// mut_ref.push('f');
+/// ```
+#[cfg(doctest)]
+fn mut_create_extract(){}
