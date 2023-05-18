@@ -145,6 +145,7 @@ impl<'s, M: Mutability, T> MaybeMut<'s, M, T> {
         }
     }
 
+    #[inline]
     pub fn as_enum<'o>(&'o mut self) -> MaybeMutEnum<'o, T> 
     where
         's: 'o,
@@ -167,6 +168,14 @@ impl<'s, M: Mutability, T> MaybeMut<'s, M, T> {
         unsafe {
             //TODO: Add safety comment
             self.ptr.as_ref()
+        }
+    }
+
+    #[inline]
+    pub fn reborrow<'o>(&'o mut self) -> MaybeMut<'o, M, T> {
+        unsafe{
+            //TODO: Add safety comment
+            Self::new(self.ptr)
         }
     }
 }
