@@ -171,6 +171,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
+    pub fn as_ptr(&self) -> NonNull<T> {
+        self.ptr
+    }
+
+    #[inline]
     pub fn as_enum<'o>(&'o mut self) -> GenRefEnum<'o, T> 
         where
             's: 'o,
