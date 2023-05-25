@@ -17,19 +17,19 @@ impl MutabilitySealed for Immutable{}
 pub unsafe trait Mutability: MutabilitySealed{
 
     //TODO: Add safety comment
-    unsafe fn dispatch<'i, T, U, M, FM, FIM>(ptr: NonNull<T>, moved: M, fn_mut: FM, fn_immut: FIM) -> U
+    unsafe fn dispatch<'i, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> U
         where 
             T: 'i + ?Sized,
-            FM: FnOnce(M, &'i mut T) -> U,
-            FIM: FnOnce(M, &'i T) -> U;
+            FM: FnOnce(X, &'i mut T) -> U,
+            FIM: FnOnce(X, &'i T) -> U;
 
     //TODO: Add safety comment
-    unsafe fn map<'i, 'o, T, U, M, FM, FIM>(ptr: NonNull<T>, moved: M, fn_mut: FM, fn_immut: FIM) -> NonNull<U>
+    unsafe fn map<'i, 'o, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> NonNull<U>
         where 
             T: 'i + ?Sized,
             U: 'o + ?Sized,
-            FM: FnOnce(M, &'i mut T) -> &'o mut U,
-            FIM: FnOnce(M, &'i T) -> &'o U;
+            FM: FnOnce(X, &'i mut T) -> &'o mut U,
+            FIM: FnOnce(X, &'i T) -> &'o U;
 
     fn is_mutable() -> bool;
 }
@@ -37,22 +37,22 @@ pub unsafe trait Mutability: MutabilitySealed{
 unsafe impl Mutability for Mutable{
     
     #[inline]
-    unsafe fn dispatch<'i, T, U, M, FM, FIM>(mut ptr: NonNull<T>, moved: M, fn_mut: FM, _fn_immut: FIM) -> U
+    unsafe fn dispatch<'i, T, U, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> U
         where 
             T: 'i + ?Sized,
-            FM: FnOnce(M, &'i mut T) -> U,
-            FIM: FnOnce(M, &'i T) -> U 
+            FM: FnOnce(X, &'i mut T) -> U,
+            FIM: FnOnce(X, &'i T) -> U 
     {
         fn_mut(moved, ptr.as_mut())
     }
     
     #[inline]
-    unsafe fn map<'i, 'o, T, U, M, FM, FIM>(mut ptr: NonNull<T>, moved: M, fn_mut: FM, _fn_immut: FIM) -> NonNull<U>
+    unsafe fn map<'i, 'o, T, U, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> NonNull<U>
         where 
             T: 'i + ?Sized,
             U: 'o + ?Sized,
-            FM: FnOnce(M, &'i mut T) -> &'o mut U,
-            FIM: FnOnce(M, &'i T) -> &'o U 
+            FM: FnOnce(X, &'i mut T) -> &'o mut U,
+            FIM: FnOnce(X, &'i T) -> &'o U 
     {
         fn_mut(moved, ptr.as_mut()).into()
     }
@@ -66,22 +66,22 @@ unsafe impl Mutability for Mutable{
 unsafe impl Mutability for Immutable{
     
     #[inline]
-    unsafe fn dispatch<'i, T, U, M, FM, FIM>(ptr: NonNull<T>, moved: M, _fn_mut: FM, fn_immut: FIM) -> U
+    unsafe fn dispatch<'i, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> U
         where 
             T: 'i + ?Sized,
-            FM: FnOnce(M, &'i mut T) -> U,
-            FIM: FnOnce(M, &'i T) -> U 
+            FM: FnOnce(X, &'i mut T) -> U,
+            FIM: FnOnce(X, &'i T) -> U 
     {
         fn_immut(moved, ptr.as_ref())
     }
     
     #[inline]
-    unsafe fn map<'i, 'o, T, U, M, FM, FIM>(ptr: NonNull<T>, moved: M, _fn_mut: FM, fn_immut: FIM) -> NonNull<U>
+    unsafe fn map<'i, 'o, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> NonNull<U>
         where 
             T: 'i + ?Sized,
             U: 'o + ?Sized,
-            FM: FnOnce(M, &'i mut T) -> &'o mut U,
-            FIM: FnOnce(M, &'i T) -> &'o U 
+            FM: FnOnce(X, &'i mut T) -> &'o mut U,
+            FIM: FnOnce(X, &'i T) -> &'o U 
     {
         fn_immut(moved, ptr.as_ref()).into()
     }
