@@ -2,7 +2,7 @@
 
 This project is in a very experimental state, please don't use it in your projects just yet!
 
-`GenRef<'a, M, T>` is the main type of this crate. In many ways, it acts like a `&&mut` reference, but code knowing the mutability can downcast it to a `&` or `&mut` reference using the `as_immut` and `as_mut` methods.
+`GenRef<'a, M, T>` is the main type of this crate. In many ways, it acts like a `&mut &` reference (it isn't `Copy` and is invariant over `T`), but code that knows the mutability can downcast it to a `&` or `&mut` reference using the `as_immut` and `as_mut` methods.
 
 The backbone of the functionality is provided by the `Mutability` trait (and its implementations for the `Mutable` and `Immutable` empty types). It defines behavior for each type of reference in form of unsafe, pointer-to-pointer functions.
 
