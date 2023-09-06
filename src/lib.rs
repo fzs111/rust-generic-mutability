@@ -1,5 +1,6 @@
 #![no_std]
 
+use core::borrow::{Borrow, BorrowMut};
 use core::ptr::NonNull;
 use core::marker::PhantomData;
 
@@ -209,6 +210,13 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             Self::new(self.ptr)
         }
     }
+    #[inline]
+    pub fn into_immut(self) -> &'s T {
+        unsafe{
+            //TODO: Add safety comment
+            & *self.ptr.as_ptr()
+        }
+    }
 }
 
 impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
@@ -221,6 +229,14 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
         unsafe {
             //TODO: Add safety comment
             self.ptr.as_mut()
+        }
+    }
+
+    #[inline]
+    pub fn into_mut(self) -> &'s mut T {
+        unsafe{
+            //TODO: Add safety comment
+            &mut *self.ptr.as_ptr()
         }
     }
 }
@@ -249,7 +265,27 @@ impl<'i, 'o, T: ?Sized> From<&'i T> for GenRef<'o, Immutable, T>
     }
 }
 
+impl<M: Mutability, T> AsRef<T> for GenRef<'_, M, T> {
+    fn as_ref(&self) -> &T {
+        self.as_immut()
+    }
+}
+impl<T> AsMut<T> for GenRef<'_, Mutable, T> {
+    fn as_mut(&mut self) -> &mut T {
+        self.as_mut()
+    }
+}
 
+impl<M: Mutability, T> Borrow<T> for GenRef<'_, M, T> {
+    fn borrow(&self) -> &T {
+        self.as_immut()
+    }
+}
+impl<T> BorrowMut<T> for GenRef<'_, Mutable, T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        self.as_mut()
+    }
+}
 
 /// ```compile_fail
 /// let mut string = String::from("asd");
@@ -264,3 +300,16 @@ impl<'i, 'o, T: ?Sized> From<&'i T> for GenRef<'o, Immutable, T>
 /// ```
 #[cfg(doctest)]
 fn mut_create_extract(){}
+
+/// ```compile_fail
+/// let gen_v = {
+///     let mut v = vec![1, 2, 3, 4];
+/// 
+///     let mut gen_v = GenRef::from(&mut v);
+/// 
+///     gen_v.reborrow()
+/// };
+/// gen_v.
+/// ```
+#[cfg(doctest)]
+fn reborrow_with_longer_lifetime(){}
