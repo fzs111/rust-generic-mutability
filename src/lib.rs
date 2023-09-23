@@ -144,7 +144,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
-    pub fn map<'i, 'o, U, FM, FIM>(&mut self, fn_mut: FM, fn_immut: FIM) -> GenRef<'o, M, U>
+    pub fn map<'i, 'o, U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> GenRef<'o, M, U>
         where 
             's: 'i,
             U: 'o + ?Sized,
