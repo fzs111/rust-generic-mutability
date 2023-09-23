@@ -40,7 +40,7 @@ fn use_generic_index(){
 
     assert_eq!(gen_v.as_immut(), &[1, 2, 13, 4]);
 
-    assert_eq!(v, &[1, 2, 13, 4])
+    assert_eq!(v, &[1, 2, 13, 4]);
 }
 
 //TODO: Add MORE TESTS!!!
