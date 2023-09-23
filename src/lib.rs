@@ -287,6 +287,18 @@ impl<T> BorrowMut<T> for GenRef<'_, Mutable, T> {
     }
 }
 
+#[macro_export]
+macro_rules! gen_ref {
+    ($gen_ref:ident -> &gen $place:expr) => {
+        GenRef::map($gen_ref, |$gen_ref| &mut $place, |$gen_ref| & $place)
+    };
+
+    //? Are there any use cases for this branch?
+    ($gen_ref:ident move ($($moved:ident),+) -> &gen $place:expr) => {
+        GenRef::map_with_move($gen_ref, ($($moved),+), |$gen_ref, ($($moved),+)| &mut $place, |$x| & $place)
+    };
+}
+
 /// ```compile_fail
 /// let mut string = String::from("asd");
 ///
