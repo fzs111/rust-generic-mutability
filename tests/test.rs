@@ -21,7 +21,7 @@ fn index_genref<'a, M: Mutability, T, I>(mut self_: GenRef<'a, M, T>, i: I) -> G
 where
     T: IndexMut<I> + ?Sized
 {
-    self_.map_with_move(i, |i, t| &mut t[i], |i, t| &t[i])
+    self_.map_with_move(i, |t, i| &mut t[i], |t, i| &t[i])
 }
 
 #[test]

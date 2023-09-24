@@ -29,8 +29,8 @@ pub unsafe trait Mutability: MutabilitySealed{
         where 
             T: 'i + ?Sized,
             U: 'o + ?Sized,
-            FM: FnOnce(X, &'i mut T) -> &'o mut U,
-            FIM: FnOnce(X, &'i T) -> &'o U;
+            FM: FnOnce(&'i mut T, X) -> &'o mut U,
+            FIM: FnOnce(&'i T, X) -> &'o U;
 
     fn is_mutable() -> bool;
 }
@@ -52,10 +52,10 @@ unsafe impl Mutability for Mutable{
         where 
             T: 'i + ?Sized,
             U: 'o + ?Sized,
-            FM: FnOnce(X, &'i mut T) -> &'o mut U,
-            FIM: FnOnce(X, &'i T) -> &'o U 
+            FM:  FnOnce(&'i mut T, X) -> &'o mut U,
+            FIM: FnOnce(&'i T,     X) -> &'o U 
     {
-        fn_mut(moved, ptr.as_mut()).into()
+        fn_mut(ptr.as_mut(), moved).into()
     }
 
     #[inline]
@@ -81,10 +81,10 @@ unsafe impl Mutability for Immutable{
         where 
             T: 'i + ?Sized,
             U: 'o + ?Sized,
-            FM: FnOnce(X, &'i mut T) -> &'o mut U,
-            FIM: FnOnce(X, &'i T) -> &'o U 
+            FM:  FnOnce(&'i mut T, X) -> &'o mut U,
+            FIM: FnOnce(&'i T,     X) -> &'o U 
     {
-        fn_immut(moved, ptr.as_ref()).into()
+        fn_immut(ptr.as_ref(), moved).into()
     }
 
     #[inline]
@@ -153,7 +153,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     {
         unsafe {
             //TODO: Add safety comment
-            GenRef::new(M::map(self.ptr, (), |(), t| fn_mut(t), |(), t| fn_immut(t)))
+            GenRef::new(M::map(self.ptr, (), |t, ()| fn_mut(t), |t, ()| fn_immut(t)))
         }
     }
 
@@ -162,8 +162,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         where 
             's: 'i,
             U: 'o + ?Sized,
-            FM: FnOnce(X, &'i mut T) -> &'o mut U,
-            FIM: FnOnce(X, &'i T) -> &'o U,
+            FM:  FnOnce(&'i mut T, X) -> &'o mut U,
+            FIM: FnOnce(&'i T,     X) -> &'o U,
     {
         unsafe {
             //TODO: Add safety comment
