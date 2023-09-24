@@ -11,11 +11,10 @@ mod seal{
 pub enum Immutable{}
 pub enum Mutable{}
 
-use seal::MutabilitySealed;
-impl MutabilitySealed for Mutable{}
-impl MutabilitySealed for Immutable{}
+impl seal::MutabilitySealed for Mutable{}
+impl seal::MutabilitySealed for Immutable{}
 
-pub unsafe trait Mutability: MutabilitySealed{
+pub unsafe trait Mutability: seal::MutabilitySealed{
 
     //TODO: Add safety comment
     unsafe fn dispatch<'i, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> U
