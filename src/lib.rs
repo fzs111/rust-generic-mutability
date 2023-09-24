@@ -299,13 +299,14 @@ macro_rules! gen_ref {
 }
 
 /// ```compile_fail
+/// # use generic_mutability::GenRef;
 /// let mut string = String::from("asd");
 ///
-/// let mut genref = MaybeMut::from(&mut string);
+/// let mut genref = GenRef::from(&mut string);
 ///
 /// let mut_ref = genref.as_mut();
 ///
-/// assert_eq!(string, String::from("asdf"));
+/// assert_eq!(string, String::from("asd"));
 ///
 /// mut_ref.push('f');
 /// ```
@@ -313,14 +314,15 @@ macro_rules! gen_ref {
 fn mut_create_extract(){}
 
 /// ```compile_fail
-/// let gen_v = {
+/// # use generic_mutability::GenRef;
+/// let mut gen_v = {
 ///     let mut v = vec![1, 2, 3, 4];
 /// 
 ///     let mut gen_v = GenRef::from(&mut v);
 /// 
 ///     gen_v.reborrow()
 /// };
-/// gen_v.
+/// gen_v.as_mut()[0] += 10;
 /// ```
 #[cfg(doctest)]
 fn reborrow_with_longer_lifetime(){}
