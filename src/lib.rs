@@ -17,19 +17,19 @@ impl seal::MutabilitySealed for Immutable{}
 pub unsafe trait Mutability: seal::MutabilitySealed{
 
     //TODO: Add safety comment
-    unsafe fn dispatch<'i, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> U
+    unsafe fn dispatch<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> U
         where 
-            T: 'i + ?Sized,
-            FM: FnOnce(X, &'i mut T) -> U,
-            FIM: FnOnce(X, &'i T) -> U;
+            T: 'a + ?Sized,
+            FM: FnOnce(X, &'a mut T) -> U,
+            FIM: FnOnce(X, &'a T) -> U;
 
     //TODO: Add safety comment
-    unsafe fn map<'i, 'o, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> NonNull<U>
+    unsafe fn map<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> NonNull<U>
         where 
-            T: 'i + ?Sized,
-            U: 'o + ?Sized,
-            FM: FnOnce(&'i mut T, X) -> &'o mut U,
-            FIM: FnOnce(&'i T, X) -> &'o U;
+            T: 'a + ?Sized,
+            U: 'a + ?Sized,
+            FM: FnOnce(&'a mut T, X) -> &'a mut U,
+            FIM: FnOnce(&'a T, X) -> &'a U;
 
     fn is_mutable() -> bool;
 }
@@ -37,22 +37,22 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
 unsafe impl Mutability for Mutable{
     
     #[inline]
-    unsafe fn dispatch<'i, T, U, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> U
+    unsafe fn dispatch<'a, T, U, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> U
         where 
-            T: 'i + ?Sized,
-            FM: FnOnce(X, &'i mut T) -> U,
-            FIM: FnOnce(X, &'i T) -> U 
+            T: 'a + ?Sized,
+            FM: FnOnce(X, &'a mut T) -> U,
+            FIM: FnOnce(X, &'a T) -> U 
     {
         fn_mut(moved, ptr.as_mut())
     }
     
     #[inline]
-    unsafe fn map<'i, 'o, T, U, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> NonNull<U>
+    unsafe fn map<'a, T, U, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> NonNull<U>
         where 
-            T: 'i + ?Sized,
-            U: 'o + ?Sized,
-            FM:  FnOnce(&'i mut T, X) -> &'o mut U,
-            FIM: FnOnce(&'i T,     X) -> &'o U 
+            T: 'a + ?Sized,
+            U: 'a + ?Sized,
+            FM:  FnOnce(&'a mut T, X) -> &'a mut U,
+            FIM: FnOnce(&'a T,     X) -> &'a U 
     {
         fn_mut(ptr.as_mut(), moved).into()
     }
@@ -66,22 +66,22 @@ unsafe impl Mutability for Mutable{
 unsafe impl Mutability for Immutable{
     
     #[inline]
-    unsafe fn dispatch<'i, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> U
+    unsafe fn dispatch<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> U
         where 
-            T: 'i + ?Sized,
-            FM: FnOnce(X, &'i mut T) -> U,
-            FIM: FnOnce(X, &'i T) -> U 
+            T: 'a + ?Sized,
+            FM: FnOnce(X, &'a mut T) -> U,
+            FIM: FnOnce(X, &'a T) -> U 
     {
         fn_immut(moved, ptr.as_ref())
     }
     
     #[inline]
-    unsafe fn map<'i, 'o, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> NonNull<U>
+    unsafe fn map<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> NonNull<U>
         where 
-            T: 'i + ?Sized,
-            U: 'o + ?Sized,
-            FM:  FnOnce(&'i mut T, X) -> &'o mut U,
-            FIM: FnOnce(&'i T,     X) -> &'o U 
+            T: 'a + ?Sized,
+            U: 'a + ?Sized,
+            FM:  FnOnce(&'a mut T, X) -> &'a mut U,
+            FIM: FnOnce(&'a T,     X) -> &'a U 
     {
         fn_immut(ptr.as_ref(), moved).into()
     }
@@ -117,11 +117,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
     
     #[inline]
-    pub fn dispatch<'i, U, FM, FIM>(&'i mut self, fn_mut: FM, fn_immut: FIM) -> U
+    pub fn dispatch<U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> U
         where 
-            's: 'i,
-            FM: FnOnce(&'i mut T) -> U,
-            FIM: FnOnce(&'i T) -> U,
+            FM: FnOnce(&'s mut T) -> U,
+            FIM: FnOnce(&'s T) -> U,
     {
         unsafe{
             //TODO: Add safety comment
@@ -130,11 +129,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
-    pub fn dispatch_with_move<'i, U, X, FM, FIM>(&'i mut self, moved: X, fn_mut: FM, fn_immut: FIM) -> U
+    pub fn dispatch_with_move<U, X, FM, FIM>(self, moved: X, fn_mut: FM, fn_immut: FIM) -> U
         where 
-            's: 'i,
-            FM: FnOnce(X, &'i mut T) -> U,
-            FIM: FnOnce(X, &'i T) -> U,
+            FM: FnOnce(X, &'s mut T) -> U,
+            FIM: FnOnce(X, &'s T) -> U,
     {
         unsafe{
             //TODO: Add safety comment
@@ -143,12 +141,12 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
-    pub fn map<'i, 'o, U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> GenRef<'o, M, U>
+    pub fn map<'a, U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> GenRef<'a, M, U>
         where 
-            's: 'i,
-            U: 'o + ?Sized,
-            FM: FnOnce(&'i mut T) -> &'o mut U,
-            FIM: FnOnce(&'i T) -> &'o U,
+            's: 'a,
+            U: 'a + ?Sized,
+            FM: FnOnce(&'a mut T) -> &'a mut U,
+            FIM: FnOnce(&'a T) -> &'a U,
     {
         unsafe {
             //TODO: Add safety comment
@@ -157,12 +155,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
-    pub fn map_with_move<'i, 'o, U, X, FM, FIM>(&mut self, moved: X, fn_mut: FM, fn_immut: FIM) -> GenRef<'o, M, U>
+    pub fn map_with_move<U, X, FM, FIM>(self, moved: X, fn_mut: FM, fn_immut: FIM) -> GenRef<'s, M, U>
         where 
-            's: 'i,
-            U: 'o + ?Sized,
-            FM:  FnOnce(&'i mut T, X) -> &'o mut U,
-            FIM: FnOnce(&'i T,     X) -> &'o U,
+            U: ?Sized,
+            FM:  FnOnce(&'s mut T, X) -> &'s mut U,
+            FIM: FnOnce(&'s T,     X) -> &'s U,
     {
         unsafe {
             //TODO: Add safety comment
@@ -176,10 +173,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
-    pub fn as_enum<'o>(&'o mut self) -> GenRefEnum<'o, T> 
-        where
-            's: 'o,
-    {
+    pub fn into_enum(self) -> GenRefEnum<'s, T> {
         unsafe{
             //TODO: Add safety comment
             M::dispatch(
@@ -192,10 +186,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
-    pub fn as_immut<'o>(&'o self) -> &'o T 
-        where
-            's: 'o,
-    {
+    pub fn as_immut(&self) -> &T {
         unsafe {
             //TODO: Add safety comment
             self.ptr.as_ref()
@@ -203,7 +194,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
-    pub fn reborrow<'o>(&'o mut self) -> GenRef<'o, M, T> {
+    pub fn reborrow(&mut self) -> GenRef<'_, M, T> {
         unsafe{
             //TODO: Add safety comment
             Self::new(self.ptr)
@@ -221,10 +212,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
 impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
 
     #[inline]
-    pub fn as_mut<'o>(&'o mut self) -> &'o mut T 
-        where
-            's: 'o,
-    {
+    pub fn as_mut(&mut self) -> &mut T {
         unsafe {
             //TODO: Add safety comment
             self.ptr.as_mut()
@@ -240,11 +228,8 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
     }
 }
 
-impl<'i, 'o, T: ?Sized> From<&'i mut T> for GenRef<'o, Mutable, T> 
-    where
-        'i: 'o,
-{
-    fn from(reference: &'i mut T) -> Self {
+impl<'a, T: ?Sized> From<&'a mut T> for GenRef<'a, Mutable, T> {
+    fn from(reference: &'a mut T) -> Self {
         unsafe{
             //TODO: Add safety comment
             Self::new(NonNull::from(reference))
@@ -252,11 +237,8 @@ impl<'i, 'o, T: ?Sized> From<&'i mut T> for GenRef<'o, Mutable, T>
     }
 }
 
-impl<'i, 'o, T: ?Sized> From<&'i T> for GenRef<'o, Immutable, T> 
-    where
-        'i: 'o,
-{
-    fn from(reference: &'i T) -> Self {
+impl<'a, T: ?Sized> From<&'a T> for GenRef<'a, Immutable, T> {
+    fn from(reference: &'a T) -> Self {
         unsafe{
             //TODO: Add safety comment
             Self::new(NonNull::from(reference))
@@ -305,10 +287,12 @@ macro_rules! gen_ref {
 /// let mut genref = GenRef::from(&mut string);
 ///
 /// let mut_ref = genref.as_mut();
-///
-/// assert_eq!(string, String::from("asd"));
-///
+/// 
 /// mut_ref.push('f');
+///
+/// assert_eq!(string, String::from("asdf"));
+///
+/// mut_ref.push('g');
 /// ```
 #[cfg(doctest)]
 fn mut_create_extract(){}
