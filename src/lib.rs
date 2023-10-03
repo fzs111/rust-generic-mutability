@@ -310,3 +310,17 @@ fn mut_create_extract(){}
 /// ```
 #[cfg(doctest)]
 fn reborrow_with_longer_lifetime(){}
+
+/// ```compile_fail
+/// let s = String::from("asdf");
+/// 
+/// let gen_s = GenRef::from(&s);
+/// 
+/// let ref_s = gen_s.into_immut();
+/// 
+/// drop(s);
+/// 
+/// println!("{}", ref_s);
+/// ```
+#[cfg(doctest)]
+fn convert_into_longer_lifetime() {}
