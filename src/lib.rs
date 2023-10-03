@@ -16,16 +16,60 @@ pub enum Mutable{}
 impl seal::MutabilitySealed for Mutable{}
 impl seal::MutabilitySealed for Immutable{}
 
+/// This is the core primitive of this crate. 
+/// It exposes raw, pointer-to-pointer operations for both mutability values.
+/// This trait is used as a bound for all items that are generic over mutability.
+/// 
+/// It is implemented for two types, `Mutable` and `Immutable`, and it is sealed, so no other types can implement it.
 pub unsafe trait Mutability: seal::MutabilitySealed{
 
-    //TODO: Add safety comment
+    /// Casts the pointer to a reference and calls either `fn_mut` or `fn_immut` depending on the mutability. 
+    /// Returns the value returned by the called closure.
+    /// 
+    /// Capturing the same values with both closures will not work: instead, you can use `moved` helper argument to move the values into the closure that is actually called.
+    /// If you do not need to capture any values, you can pass `()` to ignore it. 
+    /// 
+    /// ## Safety
+    ///
+    /// The pointer will be converted to a reference of the given mutability. As such:
+    ///
+    /// - The pointer must be properly aligned.
+    /// - The pointer must point to an initialized instance of T.
+    /// - Furthermore:
+    ///     o If the mutability is `Immutable`:
+    ///         - The pointer must be valid for reads for mutability `'a`.
+    ///         - The value must not get mutated and no mutable references to it may exist during `'a`.
+    ///     o If the mutability is `Mutable`:
+    ///         - The pointer must be valid for reads and writes for mutability `'a`.
+    ///         - No other references to the value may exist during `'a`.
+    /// 
+    /// The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     unsafe fn dispatch<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> U
         where 
             T: 'a + ?Sized,
             FM:  FnOnce(&'a mut T, X) -> U,
             FIM: FnOnce(&'a T,     X) -> U;
 
-    //TODO: Add safety comment
+    /// Casts the pointer to a reference of the given mutability, maps it into another one of the same mutability and returns it as a pointer.
+    /// 
+    /// Capturing the same values with both closures will not work: instead, you can use `moved` helper argument to move the values into the closure that is actually called.
+    /// If you do not need to capture any values, you can pass `()` to ignore it. 
+    /// 
+    /// ## Safety
+    ///
+    /// The pointer will be converted to a reference of the given mutability. As such:
+    ///
+    /// - The pointer must be properly aligned.
+    /// - The pointer must point to an initialized instance of T.
+    /// - Furthermore:
+    ///     o If the mutability is `Immutable`:
+    ///         - The pointer must be valid for reads for mutability `'a`.
+    ///         - The value must not get mutated and no mutable references to it may exist during `'a`.
+    ///     o If the mutability is `Mutable`:
+    ///         - The pointer must be valid for reads and writes for mutability `'a`.
+    ///         - No other references to the value may exist during `'a`.
+    /// 
+    /// The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     unsafe fn map<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> NonNull<U>
         where 
             T: 'a + ?Sized,
@@ -42,6 +86,10 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
             FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
             FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V);
 
+    /// Returns `true` if the mutability is `Mutable`, `false` otherwise.
+    /// 
+    /// This can be used to observe the mutability of the value at runtime. 
+    /// Consider using `dispatch` or `map` instead for compile-time resolution.
     fn is_mutable() -> bool;
 }
 
@@ -129,7 +177,10 @@ unsafe impl Mutability for Immutable{
     }
 }
 
-
+/// `GenRef` is the main type of this crate. It is a safe type; it represents a reference with generic mutability.
+/// 
+/// Library code can take a `GenRef` as an argument, and use the `map`, `dispatch` and `as_immut` methods to process the reference and return another one of the same mutability.
+/// User code can create a `GenRef` from both `&T` and `&mut T` using the `From` implementation, pass it to library code, then unwrap the result with the `into_[im]mut` and `as_[im]mut` methods.
 #[repr(transparent)]
 pub struct GenRef<'s, M: Mutability, T: ?Sized>{
     _lifetime: PhantomData<&'s mut T>,
