@@ -207,6 +207,13 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             & *self.ptr.as_ptr()
         }
     }
+
+    #[inline]
+    pub fn call<U, F>(self, f: F) -> U
+        where F: FnOnce(Self) -> U
+    {
+        f(self)
+    }
 }
 
 impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
