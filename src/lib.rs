@@ -195,9 +195,26 @@ pub enum GenRefEnum<'s, T: ?Sized>{
 
 impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     
+    /// Creates a `GenRef` from a pointer with the chosen mutability and lifetime.
+    /// 
+    /// ## Safety
+    ///
+    /// `GenRef` is a safe reference type, so the pointer must safisfy the following criteria:
+    ///
+    /// - The pointer must be properly aligned.
+    /// - The pointer must point to an initialized instance of T.
+    /// - Furthermore:
+    ///     o If the mutability is `Immutable`:
+    ///         - The pointer must be valid for reads for lifetime `'a`.
+    ///         - The value must not get mutated and no mutable references to it may exist during `'a`.
+    ///     o If the mutability is `Mutable`:
+    ///         - The pointer must be valid for reads and writes for lifetime `'a`.
+    ///         - No other references to the value may exist during `'a`.
+    /// 
+    /// The output mutability and lifetime are unbounded and does not reflect the actual mutability and lifetiem of the data. 
+    /// Extra care must be taken to ensure that the lifetime and the mutability are constrained.
     #[inline]
     pub unsafe fn new(ptr: NonNull<T>) -> Self {
-        //TODO: Add safety comment
         Self { 
             _lifetime: PhantomData, 
             _mutability: PhantomData, 
@@ -205,6 +222,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
     
+    /// Calls either `fn_mut` or `fn_immut` depending on the mutability. 
+    /// Returns the value returned by the called closure.
+    /// 
+    /// Capturing the same values with both closures will not work: if you need to do that, use the `dispatch_with_move` method instead.
     #[inline]
     pub fn dispatch<U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> U
         where 
@@ -217,6 +238,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
+    /// Calls either `fn_mut` or `fn_immut` depending on the mutability, moving an arbitrary value `moved` into it. 
+    /// Returns the value returned by the called closure.
+    /// 
+    /// This method is a helper for the case where both closures try to capture (move) the same value.
+    /// You can move these values into the closure via the `moved` argument. If you need to move more than one values, use a tuple as the `moved` argument; if you do not need to move any values, you can use the `dispatch` method instead.
     #[inline]
     pub fn dispatch_with_move<U, X, FM, FIM>(self, moved: X, fn_mut: FM, fn_immut: FIM) -> U
         where 
