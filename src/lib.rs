@@ -211,7 +211,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - No other references to the value may exist during `'a`.
     /// 
-    /// The output mutability and lifetime are unbounded and does not reflect the actual mutability and lifetiem of the data. 
+    /// The output mutability and lifetime are unbounded and do not reflect the actual mutability and lifetime of the data. 
     /// Extra care must be taken to ensure that the lifetime and the mutability are constrained.
     #[inline]
     pub unsafe fn new(ptr: NonNull<T>) -> Self {
@@ -254,7 +254,12 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             M::dispatch(self.ptr, moved, fn_mut, fn_immut)
         }
     }
-
+    
+    /// Calls either `fn_mut` or `fn_immut` depending on the mutability. 
+    /// Returns the reference returned by the closure as a `GenRef`.
+    /// 
+    /// Capturing the same values with both closures will not work: if you need to do that, use the `map_with_move` method instead.
+    /// If you want to call a function with the value of `self` (without unwrapping it), use the `call` method.
     #[inline]
     pub fn map<'a, U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> GenRef<'a, M, U>
         where 
@@ -269,6 +274,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
+    /// Calls either `fn_mut` or `fn_immut` depending on the mutability, moving an arbitrary value `moved` into it.. 
+    /// Returns the reference returned by the closure as a `GenRef`.
+    /// 
+    /// This method is a helper for the case where both closures try to capture (move) the same value.
+    /// You can move these values into the closure via the `moved` argument. If you need to move more than one values, use a tuple as the `moved` argument; if you do not need to move any values, you can use the `map` method instead.
     #[inline]
     pub fn map_with_move<U, X, FM, FIM>(self, moved: X, fn_mut: FM, fn_immut: FIM) -> GenRef<'s, M, U>
         where 
@@ -282,6 +292,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
+    /// Gets the underlying pointer. It is valid for reads, and also for writes if the mutability is `Mutable`.
     #[inline]
     pub fn as_ptr(&self) -> NonNull<T> {
         self.ptr
