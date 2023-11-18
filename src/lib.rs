@@ -298,6 +298,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         self.ptr
     }
 
+    /// Gets a shared reference. 
+    /// This method can be used in a generic context to gain immutable access to the referenced value.
+    /// 
+    /// It is identical to `AsRef<T>::as_ref` and `Borrow<T>::borrow`.
     #[inline]
     pub fn as_immut(&self) -> &T {
         unsafe {
@@ -306,6 +310,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
+    /// Reborrows the `GenRef`.
+    /// This method can be used to create a shorter-lived copy of the `GenRef`, while retaining ownership of the original.
+    /// 
+    /// This method takes a unique borrow to the original `GenRef`, regardless of mutability. 
+    /// This means that you have to mark the binding mutable, even when no mutation takes place.
     #[inline]
     pub fn reborrow(&mut self) -> GenRef<'_, M, T> {
         unsafe{
@@ -313,6 +322,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             Self::new(self.ptr)
         }
     }
+
+    /// Converts the `GenRef` into an immutable reference for the entire lifetime of the `GenRef`.
+    /// 
+    /// The main use case for this method is unwrapping a `GenRef<'_ Immutable, T>` from the caller code, after the transformations are done. 
     #[inline]
     pub fn into_immut(self) -> &'s T {
         unsafe{
@@ -321,6 +334,9 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
+    /// Calls the provided function, passing the `GenRef` as a parameter.
+    /// 
+    /// This is a helper function to allow chaining function calls as if they were methods.
     #[inline]
     pub fn call<U, F>(self, f: F) -> U
         where F: FnOnce(Self) -> U
@@ -361,6 +377,9 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
 
 impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
 
+    /// Gets a mutable reference.
+    /// 
+    /// This method is only implemented for `GenRef<'_, Mutable, T>`, so it is not accessible from generic code.
     #[inline]
     pub fn as_mut(&mut self) -> &mut T {
         unsafe {
@@ -369,6 +388,10 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
         }
     }
 
+    /// Converts the `GenRef` into a mutable reference for the entire lifetime of the `GenRef`.
+    /// 
+    /// This is used for unwrapping a `GenRef<'_ Mutable, T>` from the caller code, after the transformations are done. 
+    /// It is not accessible from generic code.
     #[inline]
     pub fn into_mut(self) -> &'s mut T {
         unsafe{
@@ -379,6 +402,9 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
 }
 
 impl<'a, T: ?Sized> From<&'a mut T> for GenRef<'a, Mutable, T> {
+
+    /// Creates a `GenRef<'_, Mutable, T>` from a mutable reference. 
+    /// This is the primary way to create `GenRef`s.
     fn from(reference: &'a mut T) -> Self {
         unsafe{
             //TODO: Add safety comment
@@ -388,6 +414,9 @@ impl<'a, T: ?Sized> From<&'a mut T> for GenRef<'a, Mutable, T> {
 }
 
 impl<'a, T: ?Sized> From<&'a T> for GenRef<'a, Immutable, T> {
+    
+    /// Creates a `GenRef<'_, Immutable, T>` from a shared reference. 
+    /// This is the primary way to create `GenRef`s.
     fn from(reference: &'a T) -> Self {
         unsafe{
             //TODO: Add safety comment
@@ -539,6 +568,9 @@ impl<'a, M: Mutability, T: ?Sized> TryFrom<GenRefEnum<'a, T>> for GenRef<'a, M, 
     }
 }
 
+/// Convenience macro for mapping a `GenRef`, where both the mutable and immutable mapping functions are exactly the same.
+/// 
+/// Practically, this mostly means field access, indexing (`Index[Mut]`) and dereferencing (`Deref[Mut]`).
 #[macro_export]
 macro_rules! gen_ref {
     ($gen_ref:ident -> (&gen $place_a:expr, &gen $place_b:expr)) => {
