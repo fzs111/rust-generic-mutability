@@ -342,6 +342,14 @@ impl<T> BorrowMut<T> for GenRef<'_, Mutable, T> {
 
 #[macro_export]
 macro_rules! gen_ref {
+    ($gen_ref:ident -> (&gen $place_a:expr, &gen $place_b:expr)) => {
+        GenRef::split($gen_ref, |$gen_ref| (&mut $place_a, &mut $place_b), |$gen_ref| (& $place_a, & $place_b))
+    };
+
+    ($gen_ref:ident move ($($moved:ident),+)  -> (&gen $place_a:expr, &gen $place_b:expr)) => {
+        GenRef::split_with_move($gen_ref, ($($moved),+), |$gen_ref, ($($moved),+)| (&mut $place_a, &mut $place_b), |$gen_ref, ($($moved),+)| (& $place_a, & $place_b))
+    };
+
     ($gen_ref:ident -> &gen $place:expr) => {
         GenRef::map($gen_ref, |$gen_ref| &mut $place, |$gen_ref| & $place)
     };
