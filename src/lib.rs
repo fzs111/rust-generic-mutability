@@ -356,7 +356,7 @@ macro_rules! gen_ref {
 
     //? Are there any use cases for this branch?
     ($gen_ref:ident move ($($moved:ident),+) -> &gen $place:expr) => {
-        GenRef::map_with_move($gen_ref, ($($moved),+), |$gen_ref, ($($moved),+)| &mut $place, |$x| & $place)
+        GenRef::map_with_move($gen_ref, ($($moved),+), |$gen_ref, ($($moved),+)| &mut $place, |$gen_ref, ($($moved),+)| & $place)
     };
 }
 
