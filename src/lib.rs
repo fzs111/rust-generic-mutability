@@ -28,8 +28,17 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
         where 
             T: 'a + ?Sized,
             U: 'a + ?Sized,
-            FM: FnOnce(&'a mut T, X) -> &'a mut U,
-            FIM: FnOnce(&'a T, X) -> &'a U;
+            FM:  FnOnce(&'a mut T, X) -> &'a mut U,
+            FIM: FnOnce(&'a T,     X) -> &'a U;
+
+    //TODO: Add safety comment
+    unsafe fn split<'a, T, U, V, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
+        where 
+            T: 'a + ?Sized,
+            U: 'a + ?Sized,
+            V: 'a + ?Sized,
+            FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
+            FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V);
 
     fn is_mutable() -> bool;
 }
@@ -55,6 +64,19 @@ unsafe impl Mutability for Mutable{
             FIM: FnOnce(&'a T,     X) -> &'a U,
     {
         fn_mut(ptr.as_mut(), moved).into()
+    }
+
+    #[inline]
+    unsafe fn split<'a, T, U, V, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
+        where 
+            T: 'a + ?Sized,
+            U: 'a + ?Sized,
+            V: 'a + ?Sized,
+            FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
+            FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V) 
+    {
+        let (a, b) = fn_mut(ptr.as_mut(), moved);
+        (a.into(), b.into())
     }
 
     #[inline]
@@ -84,6 +106,19 @@ unsafe impl Mutability for Immutable{
             FIM: FnOnce(&'a T,     X) -> &'a U,
     {
         fn_immut(ptr.as_ref(), moved).into()
+    }
+
+    
+    unsafe fn split<'a, T, U, V, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
+        where 
+            T: 'a + ?Sized,
+            U: 'a + ?Sized,
+            V: 'a + ?Sized,
+            FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
+            FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V)
+    {
+        let (a, b) = fn_immut(ptr.as_ref(), moved);
+        (a.into(), b.into())
     }
 
     #[inline]
@@ -213,6 +248,36 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         where F: FnOnce(Self) -> U
     {
         f(self)
+    }
+
+    #[inline]
+    pub fn split<U, V, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> (GenRef<'s, M, U>, GenRef<'s, M, V>)
+        where 
+            U: ?Sized,
+            V: ?Sized,
+            FM:  FnOnce(&mut T) -> (&mut U, &mut V),
+            FIM: FnOnce(&T) -> (&U, &V)
+    {
+        unsafe {
+            //TODO: Add safety comment
+            let (a, b) = M::split(self.ptr, (), |t, ()| fn_mut(t), |t, ()| fn_immut(t));
+            (GenRef::new(a), GenRef::new(b))
+        }
+    }
+    
+    #[inline]
+    pub fn split_with_move<U, V, X, FM, FIM>(self, moved: X, fn_mut: FM, fn_immut: FIM) -> (GenRef<'s, M, U>, GenRef<'s, M, V>)
+        where 
+            U: ?Sized,
+            V: ?Sized,
+            FM:  FnOnce(&mut T, X) -> (&mut U, &mut V),
+            FIM: FnOnce(&T,     X) -> (&U, &V)
+    {
+        unsafe {
+            //TODO: Add safety comment
+            let (a, b) = M::split(self.ptr, moved, fn_mut, fn_immut);
+            (GenRef::new(a), GenRef::new(b))
+        }
     }
 }
 
