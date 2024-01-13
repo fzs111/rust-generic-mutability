@@ -4,6 +4,8 @@ use core::borrow::{Borrow, BorrowMut};
 use core::ptr::NonNull;
 use core::marker::PhantomData;
 
+use split_shenanigans::{TupleMutIntoNonNull, TupleImmutIntoNonNull};
+
 mod seal{
     pub trait MutabilitySealed {}
 }
@@ -13,6 +15,52 @@ pub enum Mutable{}
 
 impl seal::MutabilitySealed for Mutable{}
 impl seal::MutabilitySealed for Immutable{}
+
+mod split_shenanigans{
+    #![allow(non_snake_case)]
+    
+    use core::ptr::NonNull;
+
+    macro_rules! run_recursively {
+        ($what:ident; $($args:tt),+; $last:ident) => {
+            $what!($($args),+; $last);
+        };
+        ($what:ident; $($args:tt),+; $first:ident, $($rest:ident),+) => {
+            run_recursively!($what; $($args),+; $($rest),+);
+            $what!($($args),+; $first, $($rest),+);
+        };
+    }
+    pub unsafe trait TupleMutIntoNonNull<'a>{
+        type Output;
+        fn into_nonnull(ref_tuple: Self) -> Self::Output;
+    }
+    pub unsafe trait TupleImmutIntoNonNull<'a>{
+        type Output;
+        fn into_nonnull(ref_tuple: Self) -> Self::Output;
+    }
+    macro_rules! impl_tuple_nonnull_from {
+        ($trait:ident, $mut_or_not:ident; $($input_types:ident),*) => {
+            unsafe impl<'a, $($input_types),*> $trait<'a> for ($($mut_or_not<'a, $input_types>),*,) 
+            where $($input_types: ?Sized),*
+            {
+                type Output = ($(NonNull<$input_types>),*,);
+                fn into_nonnull(($($input_types),*,): ($($mut_or_not<'a, $input_types>),*,)) -> ($(NonNull<$input_types>),*,) {
+                    ($(NonNull::from($input_types)),*,)
+                }
+            }
+        };
+    }
+
+    // These type aliases avoided having to $($mut_or_not)? inside another repeated expression in the macro
+    type MutRef<'a, T> = &'a mut T;
+    type ImmutRef<'a, T> = &'a T;
+
+    run_recursively!(impl_tuple_nonnull_from; TupleMutIntoNonNull, MutRef;
+        A2,B2,C2,D2,E2,F2,G2,H2,I2,J2,K2,L2,M2,N2,O2,P2,Q2,R2,S2,T2,U2,V2,W2,X2,Y2,Z2,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z);
+    
+    run_recursively!(impl_tuple_nonnull_from; TupleImmutIntoNonNull, ImmutRef;
+        A2,B2,C2,D2,E2,F2,G2,H2,I2,J2,K2,L2,M2,N2,O2,P2,Q2,R2,S2,T2,U2,V2,W2,X2,Y2,Z2,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z);
+}
 
 pub unsafe trait Mutability: seal::MutabilitySealed{
 
@@ -32,13 +80,13 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
             FIM: FnOnce(&'a T,     X) -> &'a U;
 
     //TODO: Add safety comment
-    unsafe fn split<'a, T, U, V, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
+    unsafe fn split<'a, T, U, UM, UIM, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> U
         where 
             T: 'a + ?Sized,
-            U: 'a + ?Sized,
-            V: 'a + ?Sized,
-            FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
-            FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V);
+            UM: TupleMutIntoNonNull<'a, Output = U>,
+            UIM: TupleImmutIntoNonNull<'a, Output = U>,
+            FM:  FnOnce(&'a mut T, X) -> UM,
+            FIM: FnOnce(&'a T,     X) -> UIM;
 
     fn is_mutable() -> bool;
 }
@@ -67,16 +115,15 @@ unsafe impl Mutability for Mutable{
     }
 
     #[inline]
-    unsafe fn split<'a, T, U, V, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
-        where 
-            T: 'a + ?Sized,
-            U: 'a + ?Sized,
-            V: 'a + ?Sized,
-            FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
-            FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V) 
+    unsafe fn split<'a, T, U, UM, UIM, X, FM, FIM>(mut ptr: NonNull<T>, moved: X, fn_mut: FM, _fn_immut: FIM) -> U
+            where 
+                T: 'a + ?Sized,
+                UM: TupleMutIntoNonNull<'a, Output = U>,
+                UIM: TupleImmutIntoNonNull<'a, Output = U>,
+                FM:  FnOnce(&'a mut T, X) -> UM,
+                FIM: FnOnce(&'a T,     X) -> UIM 
     {
-        let (a, b) = fn_mut(ptr.as_mut(), moved);
-        (a.into(), b.into())
+        TupleMutIntoNonNull::into_nonnull( fn_mut(ptr.as_mut(), moved) )
     }
 
     #[inline]
@@ -108,17 +155,16 @@ unsafe impl Mutability for Immutable{
         fn_immut(ptr.as_ref(), moved).into()
     }
 
-    
-    unsafe fn split<'a, T, U, V, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
-        where 
-            T: 'a + ?Sized,
-            U: 'a + ?Sized,
-            V: 'a + ?Sized,
-            FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
-            FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V)
+    #[inline]
+    unsafe fn split<'a, T, U, UM, UIM, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> U
+            where 
+                T: 'a + ?Sized,
+                UM: TupleMutIntoNonNull<'a, Output = U>,
+                UIM: TupleImmutIntoNonNull<'a, Output = U>,
+                FM:  FnOnce(&'a mut T, X) -> UM,
+                FIM: FnOnce(&'a T,     X) -> UIM 
     {
-        let (a, b) = fn_immut(ptr.as_ref(), moved);
-        (a.into(), b.into())
+        TupleImmutIntoNonNull::into_nonnull(fn_immut(ptr.as_ref(), moved))
     }
 
     #[inline]

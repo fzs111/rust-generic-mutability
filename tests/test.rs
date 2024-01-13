@@ -17,7 +17,7 @@ fn mut_create_extract(){
     assert_eq!(string, String::from("asdf"));
 }
 
-fn index_genref<'a, M: Mutability, T, I>(mut self_: GenRef<'a, M, T>, i: I) -> GenRef<'a, M, T::Output>
+fn index_genref<'a, M: Mutability, T, I>(self_: GenRef<'a, M, T>, i: I) -> GenRef<'a, M, T::Output>
 where
     T: IndexMut<I> + ?Sized
 {
@@ -94,4 +94,35 @@ fn map_macro() {
     assert_eq!(c.inner.value, vec![10, 101, 12]);
 
 }
+
+#[test]
+fn use_mutability_split(){
+    let mut v: Vec<i64> = vec![1, 2, 3];
+    let v_ref = &mut v;
+    let (a, b, c) = unsafe{
+        Mutable::split(v_ref.into(), (), 
+            |r, _| { 
+                let (a, bc) = r.split_first_mut().unwrap(); 
+                let (b, c) = bc.split_first_mut().unwrap();
+
+                (a, b, &mut c[0])
+            }, 
+            |r, _| {
+                let (a, bc) = r.split_first().unwrap(); 
+                let (b, c) = bc.split_first().unwrap();
+
+                (a, b, &c[0])
+            }
+        )
+    };
+
+    unsafe{
+        *a.as_ptr() += 1;
+        *b.as_ptr() += 1;
+        *c.as_ptr() += 1;
+    }
+
+    assert_eq!(v, vec![2, 3, 4]);
+}
+
 //TODO: Add MORE TESTS!!!
