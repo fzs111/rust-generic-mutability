@@ -5,6 +5,7 @@ use core::ptr::NonNull;
 use core::marker::PhantomData;
 
 use split_shenanigans::{TupleMutIntoNonNull, TupleImmutIntoNonNull};
+pub use split_shenanigans::HList;
 
 mod seal{
     pub trait MutabilitySealed {}
@@ -19,15 +20,18 @@ impl seal::MutabilitySealed for Immutable{}
 mod split_shenanigans{
     use core::ptr::NonNull;
 
-    struct HList<Head, Tail>(Head, Tail);
+    //TODO: Add docs
+    pub struct HList<Head, Tail>(Head, Tail);
 
     macro_rules! tuple_ref_into_nonnull {
         ($trait:ident, $mut_or_not:ident) => {
+            //TODO: Add safety requirements
             pub unsafe trait $trait<'a>{
                 type Output;
                 fn into_nonnull(ref_tuple: Self) -> Self::Output;
             }
 
+            //TODO: Add safety comment
             unsafe impl<'a> $trait<'a> for () {
                 type Output = ();
                 fn into_nonnull((): Self) -> () {
@@ -35,6 +39,7 @@ mod split_shenanigans{
                 }
             }
 
+            //TODO: Add safety comment
             unsafe impl<'a, Head: ?Sized, Tail: $trait<'a>> $trait<'a> for HList<$mut_or_not<'a, Head>, Tail> {
                 type Output = (NonNull<Head>, <Tail as $trait<'a>>::Output);
                 fn into_nonnull(HList(head, tail): Self) -> Self::Output {
@@ -42,15 +47,16 @@ mod split_shenanigans{
                 }
             }
 
+            //TODO: Add safety comment
             unsafe impl<'a, T: ?Sized, U: ?Sized> $trait<'a> for ($mut_or_not<'a, T>, $mut_or_not<'a, U>) {
                 type Output = (NonNull<T>, NonNull<U>);
                 fn into_nonnull((t, u): Self) -> Self::Output {
                     (NonNull::from(t), NonNull::from(u))
                 }
             }
-            unsafe impl<'a, T: ?Sized, U: ?Sized, V: ?Sized> $trait<'a> for ($mut_or_not<'a, T>, $mut_or_not<'a, U>, $mut_or_not<'a, V>)
 
-            {
+            //TODO: Add safety comment
+            unsafe impl<'a, T: ?Sized, U: ?Sized, V: ?Sized> $trait<'a> for ($mut_or_not<'a, T>, $mut_or_not<'a, U>, $mut_or_not<'a, V>) {
                 type Output = (NonNull<T>, NonNull<U>, NonNull<V>);
                 fn into_nonnull((t, u, v): Self) -> Self::Output {
                     (NonNull::from(t), NonNull::from(u), NonNull::from(v))
@@ -126,7 +132,7 @@ unsafe impl Mutability for Mutable{
             UM: TupleMutIntoNonNull<'a, Output = U>,
             UIM: TupleImmutIntoNonNull<'a, Output = U>,
             FM:  FnOnce(&'a mut T, X) -> UM,
-            FIM: FnOnce(&'a T,     X) -> UIM
+            FIM: FnOnce(&'a T,     X) -> UIM,
     {
         TupleMutIntoNonNull::into_nonnull(fn_mut(ptr.as_mut(), moved))
     }
@@ -167,7 +173,7 @@ unsafe impl Mutability for Immutable{
             UM: TupleMutIntoNonNull<'a, Output = U>,
             UIM: TupleImmutIntoNonNull<'a, Output = U>,
             FM:  FnOnce(&'a mut T, X) -> UM,
-            FIM: FnOnce(&'a T,     X) -> UIM
+            FIM: FnOnce(&'a T,     X) -> UIM,
     {
         TupleImmutIntoNonNull::into_nonnull(fn_immut(ptr.as_ref(), moved))
     }
