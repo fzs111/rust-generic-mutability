@@ -94,4 +94,6 @@ fn map_macro() {
     assert_eq!(c.inner.value, vec![10, 101, 12]);
 
 }
+//TODO: Add tests for split
+
 //TODO: Add MORE TESTS!!!
