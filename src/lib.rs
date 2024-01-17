@@ -306,14 +306,18 @@ impl<'a, T: ?Sized> From<&'a T> for GenRef<'a, Immutable, T> {
     }
 }
 
-impl<M: Mutability, T> AsRef<T> for GenRef<'_, M, T> {
-    fn as_ref(&self) -> &T {
-        self.as_immut()
+
+impl<M: Mutability, T: ?Sized, U: ?Sized> AsRef<U> for GenRef<'_, M, T> 
+    where T: AsRef<U>
+{
+    fn as_ref(&self) -> &U {
+        self.as_immut().as_ref()
     }
 }
-impl<T> AsMut<T> for GenRef<'_, Mutable, T> {
-    fn as_mut(&mut self) -> &mut T {
-        self.as_mut()
+
+impl<T: AsMut<U> + ?Sized, U: ?Sized> AsMut<U> for GenRef<'_, Mutable, T> {
+    fn as_mut(&mut self) -> &mut U {
+        self.as_mut().as_mut()
     }
 }
 
