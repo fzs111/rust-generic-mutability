@@ -2,6 +2,7 @@
 
 use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{Debug, Display};
+use core::hash::Hash;
 use core::ptr::NonNull;
 use core::marker::PhantomData;
 
@@ -306,6 +307,42 @@ impl<'a, T: ?Sized> From<&'a T> for GenRef<'a, Immutable, T> {
     }
 }
 
+impl<MT: Mutability, MU: Mutability, T: ?Sized, U: ?Sized> PartialEq<GenRef<'_, MU, U>> for GenRef<'_, MT, T>
+    where T: PartialEq<U>
+{
+    fn eq(&self, other: &GenRef<'_, MU, U>) -> bool {
+        self.as_immut().eq(other.as_immut())
+    }
+}
+
+impl<M: Mutability, T: Eq + ?Sized> Eq for GenRef<'_, M, T> {}
+
+impl<MT: Mutability, MU: Mutability, T: ?Sized, U: ?Sized> PartialOrd<GenRef<'_, MU, U>> for GenRef<'_, MT, T>
+    where T: PartialOrd<U>
+{
+    fn partial_cmp(&self, other: &GenRef<'_, MU, U>) -> Option<core::cmp::Ordering> {
+        self.as_immut().partial_cmp(other.as_immut())
+    }
+}
+
+impl<M: Mutability, T: Ord + ?Sized> Ord for GenRef<'_, M, T>
+{
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.as_immut().cmp(other.as_immut())
+    }
+}
+
+impl<M: Mutability, T: Hash + ?Sized> Hash for GenRef<'_, M, T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.as_immut().hash(state)
+    }
+}
+
+//TODO: Add safety comment
+unsafe impl<M: Mutability, T: Sync + ?Sized> Sync for GenRef<'_, M, T> {}
+
+//TODO: Add safety comment
+unsafe impl<M: Mutability, T: Send + Sync + ?Sized> Send for GenRef<'_, M, T> {}
 
 impl<M: Mutability, T: ?Sized, U: ?Sized> AsRef<U> for GenRef<'_, M, T> 
     where T: AsRef<U>
@@ -338,6 +375,18 @@ impl<'a, M: Mutability, T: ?Sized> From<GenRef<'a, M, T>> for GenRefEnum<'a, T> 
             |r| GenRefEnum::Mutable(r),
             |r| GenRefEnum::Immutable(r),
         )
+    }
+}
+
+impl<M: Mutability, T: Debug + ?Sized> Debug for GenRef<'_, M, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.as_immut().fmt(f)
+    }
+}
+
+impl<M: Mutability, T: Display + ?Sized> Display for GenRef<'_, M, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.as_immut().fmt(f)
     }
 }
 
