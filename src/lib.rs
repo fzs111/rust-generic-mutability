@@ -209,14 +209,6 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     #[inline]
-    pub fn into_enum(self) -> GenRefEnum<'s, T> {
-        self.dispatch(
-            |r| GenRefEnum::Mutable(r),
-            |r| GenRefEnum::Immutable(r),
-        )
-    }
-
-    #[inline]
     pub fn as_immut(&self) -> &T {
         unsafe {
             //TODO: Add safety comment
