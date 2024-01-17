@@ -321,18 +321,18 @@ impl<T: AsMut<U> + ?Sized, U: ?Sized> AsMut<U> for GenRef<'_, Mutable, T> {
     }
 }
 
-impl<M: Mutability, T> Borrow<T> for GenRef<'_, M, T> {
+impl<M: Mutability, T: ?Sized> Borrow<T> for GenRef<'_, M, T> {
     fn borrow(&self) -> &T {
         self.as_immut()
     }
 }
-impl<T> BorrowMut<T> for GenRef<'_, Mutable, T> {
+impl<T: ?Sized> BorrowMut<T> for GenRef<'_, Mutable, T> {
     fn borrow_mut(&mut self) -> &mut T {
         self.as_mut()
     }
 }
 
-impl<'a, M: Mutability, T> From<GenRef<'a, M, T>> for GenRefEnum<'a, T> {
+impl<'a, M: Mutability, T: ?Sized> From<GenRef<'a, M, T>> for GenRefEnum<'a, T> {
     fn from(genref: GenRef<'a, M, T>) -> Self {
         genref.dispatch(
             |r| GenRefEnum::Mutable(r),
@@ -378,7 +378,7 @@ Expected enum variant GenRefEnum::{target}
     }
 }
 
-impl<'a, M: Mutability, T> TryFrom<GenRefEnum<'a, T>> for GenRef<'a, M, T> {
+impl<'a, M: Mutability, T: ?Sized> TryFrom<GenRefEnum<'a, T>> for GenRef<'a, M, T> {
     type Error = IncorrectMutability;
     fn try_from(genref_enum: GenRefEnum<'a, T>) -> Result<Self, Self::Error> {
         match (M::is_mutable(), genref_enum) {
