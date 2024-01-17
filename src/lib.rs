@@ -136,6 +136,7 @@ pub struct GenRef<'s, M: Mutability, T: ?Sized>{
     _mutability: PhantomData<*const M>, 
     ptr: NonNull<T>,
 }
+#[derive(Debug)]
 pub enum GenRefEnum<'s, T: ?Sized>{
     Mutable(&'s mut T),
     Immutable(&'s T),
