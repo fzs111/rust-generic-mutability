@@ -94,4 +94,12 @@ fn map_macro() {
     assert_eq!(c.inner.value, vec![10, 101, 12]);
 
 }
+
+#[test]
+fn enum_tryfrom(){
+    assert!(matches!(GenRef::<'_, Mutable,   _>::try_from(GenRefEnum::Immutable(&    ())), Err(_)));
+    assert!(matches!(GenRef::<'_, Immutable, _>::try_from(GenRefEnum::Mutable  (&mut ())), Err(_)));
+    assert!(matches!(GenRef::<'_, Mutable,   _>::try_from(GenRefEnum::Mutable  (&mut ())), Ok(_)));
+    assert!(matches!(GenRef::<'_, Immutable, _>::try_from(GenRefEnum::Immutable(&    ())), Ok(_)));
+}
 //TODO: Add MORE TESTS!!!
