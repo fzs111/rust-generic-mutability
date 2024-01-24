@@ -158,7 +158,7 @@ unsafe impl Mutability for Immutable{
         fn_immut(ptr.as_ref(), moved).into()
     }
 
-    
+    #[inline]
     unsafe fn split<'a, T, U, V, X, FM, FIM>(ptr: NonNull<T>, moved: X, _fn_mut: FM, fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
         where 
             T: 'a + ?Sized,
