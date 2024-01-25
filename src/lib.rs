@@ -219,7 +219,7 @@ pub struct GenRef<'s, M: Mutability, T: ?Sized>{
 /// It doesn't have helper methods, you are supposed to `match` over it and reconstruct it when necessary.
 /// Using this type has some (small) dynamic overhead compared to the entirely zero-cost `GenRef`, but it gives a little more flexibility.
 ///
-/// This type has a `From<GenRef<'_, _, _>>` implementation, while `GenRef` has a `TryFrom<GenRefEnum<'_, _>>`.
+/// This type has a `From<GenRef<'_, M, T>>` implementation, while `GenRef` has a `TryFrom<GenRefEnum<'_, T>>`.
 #[derive(Debug)]
 pub enum GenRefEnum<'s, T: ?Sized>{
     Mutable(&'s mut T),
@@ -232,7 +232,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     ///
     /// To create a `GenRef` from a reference, use the `From` implementation.
     /// 
-    /// To safely attempt to convert a known-mutability reference to a generic `GenRef`, use the `TryFrom<GenRefEnum<'_, _>>` implementation.
+    /// To safely attempt to convert a known-mutability reference to a generic `GenRef`, use the `TryFrom<GenRefEnum<'_, T>>` implementation.
     ///
     /// ## Safety
     ///
@@ -427,7 +427,8 @@ impl<'s, T: ?Sized> GenRef<'s, Immutable, T> {
 
     /// Converts the `GenRef` into an immutable reference for the entire lifetime of the `GenRef`.
     ///
-    /// The main use case for this method is unwrapping a `GenRef<'_, Immutable, T>` from the caller code, after the transformations are done.
+    /// This is used for unwrapping a `GenRef<'_, Immutable, T>` from the caller code, after the transformations are done.
+    /// It is not accessible from generic code.
     #[inline]
     pub fn into_immut(self) -> &'s T {
         unsafe{
@@ -466,7 +467,10 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
 impl<'a, T: ?Sized> From<&'a mut T> for GenRef<'a, Mutable, T> {
 
     /// Creates a `GenRef<'_, Mutable, T>` from a mutable reference.
-    /// This is the primary way to create `GenRef`s.
+    ///
+    /// This is the primary way to create `GenRef`s in caller code.
+    ///
+    /// To create a generic `GenRef` from a reference, you either have to use `TryFrom<GenRefEnum<'_, T>>` or the unchecked `GenRef::new()`.
     fn from(reference: &'a mut T) -> Self {
         unsafe{
             //TODO: Add safety comment
@@ -476,9 +480,12 @@ impl<'a, T: ?Sized> From<&'a mut T> for GenRef<'a, Mutable, T> {
 }
 
 impl<'a, T: ?Sized> From<&'a T> for GenRef<'a, Immutable, T> {
-    
-    /// Creates a `GenRef<'_, Immutable, T>` from a shared reference. 
-    /// This is the primary way to create `GenRef`s.
+
+    /// Creates a `GenRef<'_, Immutable, T>` from a shared reference.
+    ///
+    /// This is the primary way to create `GenRef`s in caller code.
+    ///
+    /// To create a generic `GenRef` from a reference, you either have to use `TryFrom<GenRefEnum<'_, T>>` or the unchecked `GenRef::new()`.
     fn from(reference: &'a T) -> Self {
         unsafe{
             //TODO: Add safety comment
@@ -570,11 +577,17 @@ impl<M: Mutability, T: Display + ?Sized> Display for GenRef<'_, M, T> {
     }
 }
 
+/// Error type for `TryFrom<GenRefEnum<'_, T>>`, when the mutability of the `GenRefEnum` does not match the generic mutability parameter `M`.
+///
+/// It implements `std::error::Error` when the `std` feature is enabled. This restriction might be lifted if this gets stabilized: https://github.com/rust-lang/rust/issues/103765
+///
+/// Note that although converting from `GenRefEnum<'_, T>::Mutable` to `GenRef<'_, Immutable, T>` is technically sound it is disallowed, because it is usually not what one wants to do.
+/// If you really need to do that, convert the reference to an immutable one first.
 pub struct IncorrectMutability{
     target_mutable: bool,
 }
 
-// This shouldn't require std when this is stabilised: https://github.com/rust-lang/rust/issues/103765
+// This shouldn't require std when this is stabilized: https://github.com/rust-lang/rust/issues/103765
 #[cfg(feature = "std")]
 impl std::error::Error for IncorrectMutability{}
 
@@ -607,6 +620,19 @@ Expected enum variant GenRefEnum::{target}
     }
 }
 
+/// Attempts to convert `GenRefEnum` to a `GenRef` with generic mutability parameter `M`. 
+///
+/// The conversion is fallible because the variant of the enum is impossible to determine statically, while the value of `M` is determined at compile time.
+/// This is essentially an downcast operation.
+///
+/// This operation has a little runtime cost. Whenever possible, prefer the zero-cost methods on `GenRef`, like `map`, `dispatch` and `split`.
+///
+/// If the `M` is not a generic mutability parameter, you can use the `From<&T>` or `From<&mut T>` implementations of `GenRef` instead.
+///
+/// For an unchecked alternative, use `GenRef::new`.
+///
+/// Note that although converting from `GenRefEnum<'_, T>::Mutable` to `GenRef<'_, Immutable, T>` is technically sound it is disallowed, because it is usually not what one wants to do.
+/// If you really need to do that, convert the reference to an immutable one first.
 impl<'a, M: Mutability, T: ?Sized> TryFrom<GenRefEnum<'a, T>> for GenRef<'a, M, T> {
     type Error = IncorrectMutability;
     fn try_from(genref_enum: GenRefEnum<'a, T>) -> Result<Self, Self::Error> {
