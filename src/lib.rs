@@ -365,17 +365,6 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    /// Converts the `GenRef` into an immutable reference for the entire lifetime of the `GenRef`.
-    ///
-    /// The main use case for this method is unwrapping a `GenRef<'_ Immutable, T>` from the caller code, after the transformations are done.
-    #[inline]
-    pub fn into_immut(self) -> &'s T {
-        unsafe{
-            //TODO: Add safety comment
-            & *self.ptr.as_ptr()
-        }
-    }
-
     /// Calls the provided function, passing the `GenRef` as a parameter.
     ///
     /// This is a helper function to allow chaining function calls as if they were methods.
@@ -430,6 +419,20 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             //TODO: Add safety comment
             let (a, b) = M::split(self.ptr, moved, fn_mut, fn_immut);
             (GenRef::new(a), GenRef::new(b))
+        }
+    }
+}
+
+impl<'s, T: ?Sized> GenRef<'s, Immutable, T> {
+
+    /// Converts the `GenRef` into an immutable reference for the entire lifetime of the `GenRef`.
+    ///
+    /// The main use case for this method is unwrapping a `GenRef<'_, Immutable, T>` from the caller code, after the transformations are done.
+    #[inline]
+    pub fn into_immut(self) -> &'s T {
+        unsafe{
+            //TODO: Add safety comment
+            & *self.ptr.as_ptr()
         }
     }
 }
