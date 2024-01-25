@@ -10,7 +10,9 @@ mod seal{
     pub trait MutabilitySealed {}
 }
 
+/// This is one of the types implementing the `Mutability` trait. It is an uninhabited type, only used as typestate. For more information, visit the documentation on the `Mutability` trait.
 pub enum Immutable{}
+/// This is one of the types implementing the `Mutability` trait. It is an uninhabited type, only used as typestate. For more information, visit the documentation on the `Mutability` trait.
 pub enum Mutable{}
 
 impl seal::MutabilitySealed for Mutable{}
@@ -19,31 +21,30 @@ impl seal::MutabilitySealed for Immutable{}
 /// This is the core primitive of this crate. 
 /// It exposes raw, pointer-to-pointer operations for both mutability values.
 /// This trait is used as a bound for all items that are generic over mutability.
-/// 
+///
 /// It is implemented for two types, `Mutable` and `Immutable`, and it is sealed, so no other types can implement it.
 pub unsafe trait Mutability: seal::MutabilitySealed{
 
     /// Casts the pointer to a reference and calls either `fn_mut` or `fn_immut` depending on the mutability. 
     /// Returns the value returned by the called closure.
-    /// 
+    ///
     /// Capturing the same values with both closures will not work: instead, you can use `moved` helper argument to move the values into the closure that is actually called.
     /// If you do not need to capture any values, you can pass `()` to ignore it. 
-    /// 
+    ///
     /// ## Safety
     ///
-    /// The pointer will be converted to a reference of the given mutability. As such:
+    /// The pointer will be dereferenced and converted to a reference of the chosen mutability. As such:
     ///
     /// - The pointer must be properly aligned.
-    /// - The pointer must point to an initialized instance of T.
+    /// - The pointer must point to an initialized instance of `T`.
+    /// - The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     /// - Furthermore:
     ///     o If the mutability is `Immutable`:
-    ///         - The pointer must be valid for reads for mutability `'a`.
-    ///         - The value must not get mutated and no mutable references to it may exist during `'a`.
+    ///         - The pointer must be valid for reads for lifetime `'a`.
+    ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'a`.
     ///     o If the mutability is `Mutable`:
-    ///         - The pointer must be valid for reads and writes for mutability `'a`.
-    ///         - No other references to the value may exist during `'a`.
-    /// 
-    /// The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
+    ///         - The pointer must be valid for reads and writes for lifetime `'a`.
+    ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     unsafe fn dispatch<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> U
         where 
             T: 'a + ?Sized,
@@ -51,25 +52,24 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
             FIM: FnOnce(&'a T,     X) -> U;
 
     /// Casts the pointer to a reference of the given mutability, maps it into another one of the same mutability and returns it as a pointer.
-    /// 
+    ///
     /// Capturing the same values with both closures will not work: instead, you can use `moved` helper argument to move the values into the closure that is actually called.
     /// If you do not need to capture any values, you can pass `()` to ignore it. 
-    /// 
+    ///
     /// ## Safety
     ///
-    /// The pointer will be converted to a reference of the given mutability. As such:
+    /// The pointer will be dereferenced and converted to a reference of the chosen mutability. As such:
     ///
     /// - The pointer must be properly aligned.
-    /// - The pointer must point to an initialized instance of T.
+    /// - The pointer must point to an initialized instance of `T`.
+    /// - The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     /// - Furthermore:
     ///     o If the mutability is `Immutable`:
-    ///         - The pointer must be valid for reads for mutability `'a`.
-    ///         - The value must not get mutated and no mutable references to it may exist during `'a`.
+    ///         - The pointer must be valid for reads for lifetime `'a`.
+    ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'a`.
     ///     o If the mutability is `Mutable`:
-    ///         - The pointer must be valid for reads and writes for mutability `'a`.
-    ///         - No other references to the value may exist during `'a`.
-    /// 
-    /// The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
+    ///         - The pointer must be valid for reads and writes for lifetime `'a`.
+    ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     unsafe fn map<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> NonNull<U>
         where 
             T: 'a + ?Sized,
@@ -77,7 +77,29 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
             FM:  FnOnce(&'a mut T, X) -> &'a mut U,
             FIM: FnOnce(&'a T,     X) -> &'a U;
 
-    //TODO: Add safety comment
+    /// Casts the pointer to a reference of the given mutability, and maps it to two derived references of the same mutability and returns them as a tuple of pointers.
+    ///
+    /// Capturing the same values with both closures will not work: instead, you can use `moved` helper argument to move the values into the closure that is actually called.
+    /// If you do not need to capture any values, you can pass `()` to ignore it.
+    ///
+    /// Note: it is not yet decided whether this will be generalized to support n-way splitting.
+    /// Two implementations already exist, see the `split-tuples-macros` and `split-cons` branches.
+    /// If you have a use case that requires more than 2-way splitting, please tell me about it in an issue.
+    ///
+    /// ## Safety
+    ///
+    /// The pointer will be dereferenced and converted to a reference of the chosen mutability. As such:
+    ///
+    /// - The pointer must be properly aligned.
+    /// - The pointer must point to an initialized instance of `T`.
+    /// - The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
+    /// - Furthermore:
+    ///     o If the mutability is `Immutable`:
+    ///         - The pointer must be valid for reads for lifetime `'a`.
+    ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'a`.
+    ///     o If the mutability is `Mutable`:
+    ///         - The pointer must be valid for reads and writes for lifetime `'a`.
+    ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     unsafe fn split<'a, T, U, V, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
         where 
             T: 'a + ?Sized,
@@ -87,9 +109,11 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
             FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V);
 
     /// Returns `true` if the mutability is `Mutable`, `false` otherwise.
-    /// 
-    /// This can be used to observe the mutability of the value at runtime. 
+    ///
+    /// This can be used to observe the mutability of the value at runtime.
     /// Consider using `dispatch` or `map` instead for compile-time resolution.
+    ///
+    /// This method has to be implemented correctly and `unsafe` code can rely on this guarantee.
     fn is_mutable() -> bool;
 }
 
@@ -179,14 +203,23 @@ unsafe impl Mutability for Immutable{
 
 /// `GenRef` is the main type of this crate. It is a safe type; it represents a reference with generic mutability.
 /// 
-/// Library code can take a `GenRef` as an argument, and use the `map`, `dispatch` and `as_immut` methods to process the reference and return another one of the same mutability.
-/// User code can create a `GenRef` from both `&T` and `&mut T` using the `From` implementation, pass it to library code, then unwrap the result with the `into_[im]mut` and `as_[im]mut` methods.
+/// Library code can take a `GenRef` as an argument, and use the `map`, `split`, `dispatch` and `as_immut` methods to process the reference and return another one of the same mutability.
+/// It can also use the `gen_ref!` macro for more convenient `map`ping or `split`ting. 
+/// It is also convert to/from a dynamic representation (`GenRefEnum`), which offers more flexibility for a little runtime overhead.
+/// 
+/// User code can create a `GenRef` from both `&T` and `&mut T` using the `From` implementation, pass it to library code, then unwrap the result with the `into_[im]mut` or `as_[im]mut` methods.
 #[repr(transparent)]
 pub struct GenRef<'s, M: Mutability, T: ?Sized>{
     _lifetime: PhantomData<&'s mut T>,
     _mutability: PhantomData<*const M>, 
     ptr: NonNull<T>,
 }
+
+/// This enum allows to erase the statically known mutability of a `GenRef`.
+/// It doesn't have helper methods, you are supposed to `match` over it and reconstruct it when necessary.
+/// Using this type has some (small) dynamic overhead compared to the entirely zero-cost `GenRef`, but it gives a little more flexibility.
+///
+/// This type has a `From<GenRef<'_, _, _>>` implementation, while `GenRef` has a `TryFrom<GenRefEnum<'_, _>>`.
 #[derive(Debug)]
 pub enum GenRefEnum<'s, T: ?Sized>{
     Mutable(&'s mut T),
@@ -195,24 +228,26 @@ pub enum GenRefEnum<'s, T: ?Sized>{
 
 impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     
-    /// Creates a `GenRef` from a pointer with the chosen mutability and lifetime.
+    /// Creates a `GenRef` from a pointer with the chosen mutability and lifetime, without checking.
+    ///
+    /// To create a `GenRef` from a reference, use the `From` implementation.
     /// 
+    /// To safely attempt to convert a known-mutability reference to a generic `GenRef`, use the `TryFrom<GenRefEnum<'_, _>>` implementation.
+    ///
     /// ## Safety
     ///
-    /// `GenRef` is a safe reference type, so the pointer must safisfy the following criteria:
+    /// `GenRef` is a safe reference type. Using this method is equivalent to dereferencing the pointer and creating a reference from it. As such:
     ///
     /// - The pointer must be properly aligned.
-    /// - The pointer must point to an initialized instance of T.
+    /// - The pointer must point to an initialized instance of `T`.
+    /// - The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     /// - Furthermore:
     ///     o If the mutability is `Immutable`:
     ///         - The pointer must be valid for reads for lifetime `'a`.
-    ///         - The value must not get mutated and no mutable references to it may exist during `'a`.
+    ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'a`.
     ///     o If the mutability is `Mutable`:
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
-    ///         - No other references to the value may exist during `'a`.
-    /// 
-    /// The output mutability and lifetime are unbounded and do not reflect the actual mutability and lifetime of the data. 
-    /// Extra care must be taken to ensure that the lifetime and the mutability are constrained.
+    ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     #[inline]
     pub unsafe fn new(ptr: NonNull<T>) -> Self {
         Self { 
@@ -222,9 +257,9 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
     
-    /// Calls either `fn_mut` or `fn_immut` depending on the mutability. 
+    /// Calls either `fn_mut` or `fn_immut` depending on the mutability.
     /// Returns the value returned by the called closure.
-    /// 
+    ///
     /// Capturing the same values with both closures will not work: if you need to do that, use the `dispatch_with_move` method instead.
     #[inline]
     pub fn dispatch<U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> U
@@ -255,7 +290,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
     
-    /// Calls either `fn_mut` or `fn_immut` depending on the mutability. 
+    /// Calls either `fn_mut` or `fn_immut` depending on the mutability.
     /// Returns the reference returned by the closure as a `GenRef`.
     /// 
     /// Capturing the same values with both closures will not work: if you need to do that, use the `map_with_move` method instead.
@@ -274,9 +309,9 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    /// Calls either `fn_mut` or `fn_immut` depending on the mutability, moving an arbitrary value `moved` into it.. 
+    /// Calls either `fn_mut` or `fn_immut` depending on the mutability, moving an arbitrary value `moved` into it.
     /// Returns the reference returned by the closure as a `GenRef`.
-    /// 
+    ///
     /// This method is a helper for the case where both closures try to capture (move) the same value.
     /// You can move these values into the closure via the `moved` argument. If you need to move more than one values, use a tuple as the `moved` argument; if you do not need to move any values, you can use the `map` method instead.
     #[inline]
@@ -292,16 +327,21 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    /// Gets the underlying pointer. It is valid for reads, and also for writes if the mutability is `Mutable`.
+    /// Gets the underlying pointer.
+    /// 
+    /// It is valid for reads, and also for writes if the mutability is `Mutable`.
+    /// 
+    /// As with normal references, you are not allowed to use reference while the pointer is in use.
     #[inline]
     pub fn as_ptr(&self) -> NonNull<T> {
         self.ptr
     }
 
-    /// Gets a shared reference. 
+    /// Gets a shared reference.
+    /// 
     /// This method can be used in a generic context to gain immutable access to the referenced value.
     /// 
-    /// It is identical to `AsRef<T>::as_ref` and `Borrow<T>::borrow`.
+    /// It is identical to `Borrow<T>::borrow`.
     #[inline]
     pub fn as_immut(&self) -> &T {
         unsafe {
@@ -311,9 +351,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     /// Reborrows the `GenRef`.
+    ///
     /// This method can be used to create a shorter-lived copy of the `GenRef`, while retaining ownership of the original.
-    /// 
-    /// This method takes a unique borrow to the original `GenRef`, regardless of mutability. 
+    /// Normal references are reborrowed automatically when they are passed to a function, but you have to manually reborrow `GenRef`s.
+    ///
+    /// This method takes a unique borrow to the original `GenRef`, regardless of mutability.
     /// This means that you have to mark the binding mutable, even when no mutation takes place.
     #[inline]
     pub fn reborrow(&mut self) -> GenRef<'_, M, T> {
@@ -324,8 +366,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     /// Converts the `GenRef` into an immutable reference for the entire lifetime of the `GenRef`.
-    /// 
-    /// The main use case for this method is unwrapping a `GenRef<'_ Immutable, T>` from the caller code, after the transformations are done. 
+    ///
+    /// The main use case for this method is unwrapping a `GenRef<'_ Immutable, T>` from the caller code, after the transformations are done.
     #[inline]
     pub fn into_immut(self) -> &'s T {
         unsafe{
@@ -335,7 +377,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     /// Calls the provided function, passing the `GenRef` as a parameter.
-    /// 
+    ///
     /// This is a helper function to allow chaining function calls as if they were methods.
     #[inline]
     pub fn call<U, F>(self, f: F) -> U
@@ -344,6 +386,14 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         f(self)
     }
 
+    /// Maps the reference into two derived references using `fn_mut` or `fn_immut` depending on the mutability.
+    /// Returns the two references as `GenRef`s.
+    ///
+    /// Capturing the same values with both closures will not work: if you need to do that, use the `split_with_move` method instead.
+    ///
+    /// Note: it is not yet decided whether this will be generalized to support n-way splitting.
+    /// Two implementations already exist, see the `split-tuples-macros` and `split-cons` branches.
+    /// If you have a use case that requires more than 2-way splitting, please tell me about it in an issue.
     #[inline]
     pub fn split<U, V, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> (GenRef<'s, M, U>, GenRef<'s, M, V>)
         where 
@@ -358,7 +408,16 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             (GenRef::new(a), GenRef::new(b))
         }
     }
-    
+
+    /// Maps the reference into two derived references using `fn_mut` or `fn_immut` depending on the mutability, moving an arbitrary value `moved` into it.
+    /// Returns the two references as `GenRef`s.
+    ///
+    /// This method is a helper for the case where both closures try to capture (move) the same value.
+    /// You can move these values into the closure via the `moved` argument. If you need to move more than one values, use a tuple as the `moved` argument; if you do not need to move any values, you can use the `split` method instead.
+    ///
+    /// Note: it is not yet decided whether this will be generalized to support n-way splitting.
+    /// Two implementations already exist, see the `split-tuples-macros` and `split-cons` branches.
+    /// If you have a use case that requires more than 2-way splitting, please tell me about it in an issue.
     #[inline]
     pub fn split_with_move<U, V, X, FM, FIM>(self, moved: X, fn_mut: FM, fn_immut: FIM) -> (GenRef<'s, M, U>, GenRef<'s, M, V>)
         where 
@@ -378,7 +437,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
 impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
 
     /// Gets a mutable reference.
-    /// 
+    ///
     /// This method is only implemented for `GenRef<'_, Mutable, T>`, so it is not accessible from generic code.
     #[inline]
     pub fn as_mut(&mut self) -> &mut T {
@@ -389,8 +448,8 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
     }
 
     /// Converts the `GenRef` into a mutable reference for the entire lifetime of the `GenRef`.
-    /// 
-    /// This is used for unwrapping a `GenRef<'_ Mutable, T>` from the caller code, after the transformations are done. 
+    ///
+    /// This is used for unwrapping a `GenRef<'_ Mutable, T>` from the caller code, after the transformations are done.
     /// It is not accessible from generic code.
     #[inline]
     pub fn into_mut(self) -> &'s mut T {
@@ -403,7 +462,7 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
 
 impl<'a, T: ?Sized> From<&'a mut T> for GenRef<'a, Mutable, T> {
 
-    /// Creates a `GenRef<'_, Mutable, T>` from a mutable reference. 
+    /// Creates a `GenRef<'_, Mutable, T>` from a mutable reference.
     /// This is the primary way to create `GenRef`s.
     fn from(reference: &'a mut T) -> Self {
         unsafe{
