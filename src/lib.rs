@@ -297,12 +297,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// Capturing the same values with both closures will not work: if you need to do that, use the `map_with_move` method instead.
     /// If you want to call a function with the value of `self` (without unwrapping it), use the `call` method.
     #[inline]
-    pub fn map<'a, U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> GenRef<'a, M, U>
+    pub fn map<U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> GenRef<'s, M, U>
         where 
-            's: 'a,
-            U: 'a + ?Sized,
-            FM:  FnOnce(&'a mut T) -> &'a mut U,
-            FIM: FnOnce(&'a T) -> &'a U,
+            U: ?Sized,
+            FM:  FnOnce(&'s mut T) -> &'s mut U,
+            FIM: FnOnce(&'s T) -> &'s U,
     {
         unsafe {
             //TODO: Add safety comment
