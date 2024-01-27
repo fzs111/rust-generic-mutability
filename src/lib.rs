@@ -3,6 +3,7 @@
 use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{Debug, Display};
 use core::hash::Hash;
+use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
 use core::marker::PhantomData;
 
@@ -461,6 +462,12 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
             //TODO: Add safety comment
             &mut *self.ptr.as_ptr()
         }
+    }
+}
+
+impl<'s, M: Mutability, T: DerefMut + ?Sized> GenRef<'s, M, T> {
+    pub fn as_deref(self) -> GenRef<'s, M, T::Target> {
+        self.map(DerefMut::deref_mut, Deref::deref)
     }
 }
 
