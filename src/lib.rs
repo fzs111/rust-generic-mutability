@@ -11,9 +11,18 @@ mod seal{
     pub trait MutabilitySealed {}
 }
 
-/// This is one of the types implementing the `Mutability` trait. It is an uninhabited type, only used as typestate. For more information, visit the documentation on the `Mutability` trait.
+/// This is one of the types implementing the `Mutability` trait, representing the mutability of a shared reference (`&T`).
+/// It is an uninhabited type, only used as typestate.
+///
+/// Note that mutation of interior mutability types (built around `UnsafeCell`) **is allowed** by `Immutable`, just as it is allowed for shared references.
+///
+/// For more information, visit the documentation on the `Mutability` trait.
 pub enum Immutable{}
-/// This is one of the types implementing the `Mutability` trait. It is an uninhabited type, only used as typestate. For more information, visit the documentation on the `Mutability` trait.
+
+/// This is one of the types implementing the `Mutability` trait, representing the mutability of a unique reference (`&mut T`).
+/// It is an uninhabited type, only used as typestate.
+///
+/// For more information, visit the documentation on the `Mutability` trait.
 pub enum Mutable{}
 
 impl seal::MutabilitySealed for Mutable{}
