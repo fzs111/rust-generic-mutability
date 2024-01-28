@@ -1,5 +1,7 @@
 #![no_std]
 
+#![forbid(unsafe_op_in_unsafe_fn)]
+
 use core::borrow::{Borrow, BorrowMut};
 use core::fmt::{Debug, Display};
 use core::hash::Hash;
@@ -136,7 +138,12 @@ unsafe impl Mutability for Mutable{
             FM:  FnOnce(&'a mut T, X) -> U,
             FIM: FnOnce(&'a T,     X) -> U, 
     {
-        fn_mut(ptr.as_mut(), moved)
+        let reference = unsafe {
+            //TODO: Add safety comment
+            ptr.as_mut()
+        };
+
+        fn_mut(reference, moved)
     }
     
     #[inline]
@@ -147,7 +154,11 @@ unsafe impl Mutability for Mutable{
             FM:  FnOnce(&'a mut T, X) -> &'a mut U,
             FIM: FnOnce(&'a T,     X) -> &'a U,
     {
-        fn_mut(ptr.as_mut(), moved).into()
+        let reference = unsafe{
+            //TODO: Add safety comment
+            ptr.as_mut()
+        };
+        fn_mut(reference, moved).into()
     }
 
     #[inline]
@@ -159,7 +170,11 @@ unsafe impl Mutability for Mutable{
             FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
             FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V) 
     {
-        let (a, b) = fn_mut(ptr.as_mut(), moved);
+        let reference = unsafe{
+            //TODO: Add safety comment
+            ptr.as_mut()
+        };
+        let (a, b) = fn_mut(reference, moved);
         (a.into(), b.into())
     }
 
@@ -178,7 +193,11 @@ unsafe impl Mutability for Immutable{
             FM:  FnOnce(&'a mut T, X) -> U,
             FIM: FnOnce(&'a T,     X) -> U,
     {
-        fn_immut(ptr.as_ref(), moved)
+        let reference = unsafe{
+            //TODO: Add safety comment
+            ptr.as_ref()
+        };
+        fn_immut(reference, moved)
     }
     
     #[inline]
@@ -189,7 +208,11 @@ unsafe impl Mutability for Immutable{
             FM:  FnOnce(&'a mut T, X) -> &'a mut U,
             FIM: FnOnce(&'a T,     X) -> &'a U,
     {
-        fn_immut(ptr.as_ref(), moved).into()
+        let reference = unsafe{
+            //TODO: Add safety comment
+            ptr.as_ref()
+        };
+        fn_immut(reference, moved).into()
     }
 
     #[inline]
@@ -201,7 +224,11 @@ unsafe impl Mutability for Immutable{
             FM:  FnOnce(&'a mut T, X) -> (&'a mut U, &'a mut V),
             FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V)
     {
-        let (a, b) = fn_immut(ptr.as_ref(), moved);
+        let reference = unsafe{
+            //TODO: Add safety comment
+            ptr.as_ref()
+        };
+        let (a, b) = fn_immut(reference, moved);
         (a.into(), b.into())
     }
 
