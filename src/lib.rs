@@ -45,7 +45,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     ///
     /// ## Safety
     ///
-    /// The pointer will be dereferenced and converted to a reference of the chosen mutability. As such:
+    /// `ptr` will be dereferenced and converted to a reference of the chosen mutability. As such:
     ///
     /// - The pointer must be properly aligned.
     /// - The pointer must point to an initialized instance of `T`.
@@ -70,7 +70,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     ///
     /// ## Safety
     ///
-    /// The pointer will be dereferenced and converted to a reference of the chosen mutability. As such:
+    /// `ptr` will be dereferenced and converted to a reference of the chosen mutability. As such:
     ///
     /// - The pointer must be properly aligned.
     /// - The pointer must point to an initialized instance of `T`.
@@ -82,6 +82,10 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     ///     o If the mutability is `Mutable`:
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
+    /// 
+    /// ## Guarantees
+    /// 
+    /// The returned pointer also satisfies all requirements listed in the Safety section. `unsafe` code may rely on this guarantee.
     unsafe fn map<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> NonNull<U>
         where 
             T: 'a + ?Sized,
@@ -100,7 +104,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     ///
     /// ## Safety
     ///
-    /// The pointer will be dereferenced and converted to a reference of the chosen mutability. As such:
+    /// `ptr` will be dereferenced and converted to a reference of the chosen mutability. As such:
     ///
     /// - The pointer must be properly aligned.
     /// - The pointer must point to an initialized instance of `T`.
@@ -112,6 +116,10 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     ///     o If the mutability is `Mutable`:
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
+    /// 
+    /// ## Guarantees
+    /// 
+    /// Both returned pointers also satisfy all requirements listed in the Safety section. `unsafe` code may rely on this guarantee.
     unsafe fn split<'a, T, U, V, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
         where 
             T: 'a + ?Sized,
@@ -139,7 +147,7 @@ unsafe impl Mutability for Mutable{
             FIM: FnOnce(&'a T,     X) -> U, 
     {
         let reference = unsafe {
-            //TODO: Add safety comment
+            // SAFETY: the caller must uphold the safety contract
             ptr.as_mut()
         };
 
@@ -155,7 +163,7 @@ unsafe impl Mutability for Mutable{
             FIM: FnOnce(&'a T,     X) -> &'a U,
     {
         let reference = unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the caller must uphold the safety contract
             ptr.as_mut()
         };
         fn_mut(reference, moved).into()
@@ -171,7 +179,7 @@ unsafe impl Mutability for Mutable{
             FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V) 
     {
         let reference = unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the caller must uphold the safety contract
             ptr.as_mut()
         };
         let (a, b) = fn_mut(reference, moved);
@@ -194,7 +202,7 @@ unsafe impl Mutability for Immutable{
             FIM: FnOnce(&'a T,     X) -> U,
     {
         let reference = unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the caller must uphold the safety contract
             ptr.as_ref()
         };
         fn_immut(reference, moved)
@@ -209,7 +217,7 @@ unsafe impl Mutability for Immutable{
             FIM: FnOnce(&'a T,     X) -> &'a U,
     {
         let reference = unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the caller must uphold the safety contract
             ptr.as_ref()
         };
         fn_immut(reference, moved).into()
@@ -225,7 +233,7 @@ unsafe impl Mutability for Immutable{
             FIM: FnOnce(&'a T,     X) -> (&'a U, &'a V)
     {
         let reference = unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the caller must uphold the safety contract
             ptr.as_ref()
         };
         let (a, b) = fn_immut(reference, moved);
@@ -245,6 +253,9 @@ unsafe impl Mutability for Immutable{
 /// It is also convert to/from a dynamic representation (`GenRefEnum`), which offers more flexibility for a little runtime overhead.
 /// 
 /// User code can create a `GenRef` from both `&T` and `&mut T` using the `From` implementation, pass it to library code, then unwrap the result with the `into_[im]mut` or `as_[im]mut` methods.
+
+// INVARIANT: `ptr` must be valid for reads and also for writes if `M` is `Mutable`, for lifetime `'s`
+
 #[repr(transparent)]
 pub struct GenRef<'s, M: Mutability, T: ?Sized>{
     _lifetime: PhantomData<&'s mut T>,
@@ -305,8 +316,13 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             FIM: FnOnce(&'s T) -> U,
     {
         unsafe{
-            //TODO: Add safety comment
-            M::dispatch(self.ptr, (), |t, ()| fn_mut(t), |t, ()| fn_immut(t))
+            // SAFETY: the struct invariants ensure safety
+            M::dispatch(
+                self.ptr, 
+                (), 
+                |t, ()| fn_mut(t), 
+                |t, ()| fn_immut(t)
+            )
         }
     }
 
@@ -322,7 +338,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             FIM: FnOnce(&'s T,     X) -> U,
     {
         unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the struct invariants ensure safety
             M::dispatch(self.ptr, moved, fn_mut, fn_immut)
         }
     }
@@ -339,10 +355,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             FM:  FnOnce(&'s mut T) -> &'s mut U,
             FIM: FnOnce(&'s T) -> &'s U,
     {
-        unsafe {
-            //TODO: Add safety comment
-            GenRef::new(M::map(self.ptr, (), |t, ()| fn_mut(t), |t, ()| fn_immut(t)))
-        }
+        self.map_with_move(
+            (),
+            |t, ()| fn_mut(t),
+            |t, ()| fn_immut(t)
+        )
     }
 
     /// Calls either `fn_mut` or `fn_immut` depending on the mutability, moving an arbitrary value `moved` into it.
@@ -358,16 +375,18 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             FIM: FnOnce(&'s T,     X) -> &'s U,
     {
         unsafe {
-            //TODO: Add safety comment
+            // SAFETY: the struct invariants ensure safety for `Mutability::map`
+            // SAFETY: `Mutability::map` guarantees the returned pointer is safe for `GenRef::new`
+            // SAFETY: all lifetimes are constrained to `'s` by the function signature
             GenRef::new(M::map(self.ptr, moved, fn_mut, fn_immut))
         }
     }
 
     /// Gets the underlying pointer.
     /// 
-    /// It is valid for reads, and also for writes if the mutability is `Mutable`.
+    /// It is valid for reads and also for writes if the mutability is `Mutable`, for lifetime `'s`.
     /// 
-    /// As with normal references, you are not allowed to use reference while the pointer is in use.
+    /// As with normal references, you are not allowed to use the `GenRef` while the pointer is in use.
     #[inline]
     pub fn as_ptr(&self) -> NonNull<T> {
         self.ptr
@@ -381,7 +400,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     #[inline]
     pub fn as_immut(&self) -> &T {
         unsafe {
-            //TODO: Add safety comment
+            // SAFETY: the struct invariants ensure safety
+            // SAFETY: the returned lifetime is constrained to an elided lifetime by the function signature
             self.ptr.as_ref()
         }
     }
@@ -396,7 +416,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     #[inline]
     pub fn reborrow(&mut self) -> GenRef<'_, M, T> {
         unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the unique borrow on `self` prevents any use that would alias the created reference
+            // SAFETY: all other invariants are inherited from the original reference
             Self::new(self.ptr)
         }
     }
@@ -424,14 +445,14 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         where 
             U: ?Sized,
             V: ?Sized,
-            FM:  FnOnce(&mut T) -> (&mut U, &mut V),
-            FIM: FnOnce(&T) -> (&U, &V)
+            FM:  FnOnce(&'s mut T) -> (&'s mut U, &'s mut V),
+            FIM: FnOnce(&'s T) -> (&'s U, &'s V)
     {
-        unsafe {
-            //TODO: Add safety comment
-            let (a, b) = M::split(self.ptr, (), |t, ()| fn_mut(t), |t, ()| fn_immut(t));
-            (GenRef::new(a), GenRef::new(b))
-        }
+        self.split_with_move(
+            (),
+            |t, ()| fn_mut(t),
+            |t, ()| fn_immut(t)
+        )
     }
 
     /// Maps the reference into two derived references using `fn_mut` or `fn_immut` depending on the mutability, moving an arbitrary value `moved` into it.
@@ -448,11 +469,13 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         where 
             U: ?Sized,
             V: ?Sized,
-            FM:  FnOnce(&mut T, X) -> (&mut U, &mut V),
-            FIM: FnOnce(&T,     X) -> (&U, &V)
+            FM:  FnOnce(&'s mut T, X) -> (&'s mut U, &'s mut V),
+            FIM: FnOnce(&'s T,     X) -> (&'s U, &'s V)
     {
         unsafe {
-            //TODO: Add safety comment
+            // SAFETY: the struct invariants ensure safety for `Mutability::split`
+            // SAFETY: `Mutability::split` guarantees both returned pointers are safe for `GenRef::new`
+            // SAFETY: all lifetimes are constrained to `'s` by the function signature
             let (a, b) = M::split(self.ptr, moved, fn_mut, fn_immut);
             (GenRef::new(a), GenRef::new(b))
         }
@@ -468,8 +491,9 @@ impl<'s, T: ?Sized> GenRef<'s, Immutable, T> {
     #[inline]
     pub fn into_immut(self) -> &'s T {
         unsafe{
-            //TODO: Add safety comment
-            & *self.ptr.as_ptr()
+            // SAFETY: the struct invariants ensure safety
+            // SAFETY: the returned lifetime is constrained to `'s` by the function signature
+            self.ptr.as_ref()
         }
     }
 }
@@ -482,7 +506,8 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
     #[inline]
     pub fn as_mut(&mut self) -> &mut T {
         unsafe {
-            //TODO: Add safety comment
+            // SAFETY: only implemented where `M` is `Mutable`, so the struct invariants ensure safety
+            // SAFETY: the returned lifetime is constrained to an elided lifetime by the function signature
             self.ptr.as_mut()
         }
     }
@@ -492,10 +517,11 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
     /// This is used for unwrapping a `GenRef<'_ Mutable, T>` from the caller code, after the transformations are done.
     /// It is not accessible from generic code.
     #[inline]
-    pub fn into_mut(self) -> &'s mut T {
+    pub fn into_mut(mut self) -> &'s mut T {
         unsafe{
-            //TODO: Add safety comment
-            &mut *self.ptr.as_ptr()
+            // SAFETY: only implemented where `M` is `Mutable`, so the struct invariants ensure safety
+            // SAFETY: the returned lifetime is constrained to `'s` by the function signature
+            self.ptr.as_mut()
         }
     }
 }
@@ -517,7 +543,8 @@ impl<'a, T: ?Sized> From<&'a mut T> for GenRef<'a, Mutable, T> {
     /// To create a generic `GenRef` from a reference, you either have to use `TryFrom<GenRefEnum<'_, T>>` or the unchecked `GenRef::new()`.
     fn from(reference: &'a mut T) -> Self {
         unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the pointer is obtained from a unique reference,
+            //         so it satisfies all invariants of `GenRef<'a, Mutable, T>`
             Self::new(NonNull::from(reference))
         }
     }
@@ -532,7 +559,8 @@ impl<'a, T: ?Sized> From<&'a T> for GenRef<'a, Immutable, T> {
     /// To create a generic `GenRef` from a reference, you either have to use `TryFrom<GenRefEnum<'_, T>>` or the unchecked `GenRef::new()`.
     fn from(reference: &'a T) -> Self {
         unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the pointer is obtained from a shared reference,
+            //         so it satisfies all invariants of `GenRef<'a, Immutable, T>`
             Self::new(NonNull::from(reference))
         }
     }
@@ -569,10 +597,12 @@ impl<M: Mutability, T: Hash + ?Sized> Hash for GenRef<'_, M, T> {
     }
 }
 
-//TODO: Add safety comment
+// SAFETY: all references can soundly implement `Sync` if `T` does
 unsafe impl<M: Mutability, T: Sync + ?Sized> Sync for GenRef<'_, M, T> {}
 
-//TODO: Add safety comment
+// SAFETY: all references can implement `Send` if `T: Send + Sync`
+// `Send` could also be implemented for `GenRef<'_, Mutable, T>` for `T: Send + ?Sync`, 
+// but that would collide with the impl for generic `M`
 unsafe impl<M: Mutability, T: Send + Sync + ?Sized> Send for GenRef<'_, M, T> {}
 
 impl<M: Mutability, T: ?Sized, U: ?Sized> AsRef<U> for GenRef<'_, M, T> 
@@ -623,7 +653,7 @@ impl<M: Mutability, T: Display + ?Sized> Display for GenRef<'_, M, T> {
 
 /// Error type for `TryFrom<GenRefEnum<'_, T>>`, when the mutability of the `GenRefEnum` does not match the generic mutability parameter `M`.
 ///
-/// It implements `std::error::Error` when the `std` feature is enabled. This restriction might be lifted if this gets stabilized: https://github.com/rust-lang/rust/issues/103765
+/// It implements `std::error::Error` when the `std` feature is enabled. This restriction might be lifted if this gets stabilized: https:// github.com/rust-lang/rust/issues/103765
 ///
 /// Note that although converting from `GenRefEnum<'_, T>::Mutable` to `GenRef<'_, Immutable, T>` is technically sound it is disallowed, because it is usually not what one wants to do.
 /// If you really need to do that, convert the reference to an immutable one first.
@@ -631,7 +661,7 @@ pub struct IncorrectMutability{
     target_mutable: bool,
 }
 
-// This shouldn't require std when this is stabilized: https://github.com/rust-lang/rust/issues/103765
+// This shouldn't require std when this is stabilized: https:// github.com/rust-lang/rust/issues/103765
 #[cfg(feature = "std")]
 impl std::error::Error for IncorrectMutability{}
 
@@ -683,14 +713,18 @@ impl<'a, M: Mutability, T: ?Sized> TryFrom<GenRefEnum<'a, T>> for GenRef<'a, M, 
         match (M::is_mutable(), genref_enum) {
             (true, GenRefEnum::Mutable(r)) => {
                 unsafe{
-                    //TODO: Add safety comment
-                    Ok(GenRef::new(r.into()))
+                    // SAFETY: `M::is_mutable()` guarantees correct result, so `M` must be `Mutable`
+                    // SAFETY: the pointer is obtained from a unique reference,
+                    //         so it satisfies all invariants of `GenRef<'a, Mutable, T>`
+                    Ok(GenRef::new(NonNull::from(r)))
                 }
             },
             (false, GenRefEnum::Immutable(r)) => {
                 unsafe{
-                    //TODO: Add safety comment
-                    Ok(GenRef::new(r.into()))
+                    // SAFETY: `M::is_mutable()` guarantees correct result, so `M` must be `Immutable`
+                    // SAFETY: the pointer is obtained from a shared reference,
+                    //         so it satisfies all invariants of `GenRef<'a, Immutable, T>`
+                    Ok(GenRef::new(NonNull::from(r)))
                 }
             },
             (target_mutable, _) => {
@@ -787,7 +821,7 @@ macro_rules! gen_ref {
         GenRef::map($gen_ref, |$gen_ref| &mut $place, |$gen_ref| & $place)
     };
 
-    //? Are there any use cases for this branch?
+    // ? Are there any use cases for this branch?
     ($gen_ref:ident move $($moved:ident),+ -> &gen $place:expr) => {
         GenRef::map_with_move($gen_ref, ($($moved),+,), |$gen_ref, ($($moved),+,)| &mut $place, |$gen_ref, ($($moved),+,)| & $place)
     };
