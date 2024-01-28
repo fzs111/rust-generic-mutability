@@ -17,7 +17,7 @@ fn mut_create_extract(){
     assert_eq!(string, String::from("asdf"));
 }
 
-fn index_genref<'a, M: Mutability, T, I>(mut self_: GenRef<'a, M, T>, i: I) -> GenRef<'a, M, T::Output>
+fn index_genref<'a, M: Mutability, T, I>(self_: GenRef<'a, M, T>, i: I) -> GenRef<'a, M, T::Output>
 where
     T: IndexMut<I> + ?Sized
 {
