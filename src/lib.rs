@@ -466,6 +466,8 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
 }
 
 impl<'s, M: Mutability, T: DerefMut + ?Sized> GenRef<'s, M, T> {
+
+    /// Dereferences the value inside the `GenRef` with `Deref` or `DerefMut`.
     pub fn as_deref(self) -> GenRef<'s, M, T::Target> {
         self.map(DerefMut::deref_mut, Deref::deref)
     }
