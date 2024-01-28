@@ -582,6 +582,14 @@ impl<MT: Mutability, T: ?Sized, U: ?Sized> PartialEq<&U> for GenRef<'_, MT, T>
     }
 }
 
+impl<MT: Mutability, T: ?Sized, U: ?Sized> PartialEq<&mut U> for GenRef<'_, MT, T>
+    where T: PartialEq<U>
+{
+    fn eq(&self, other: &&mut U) -> bool {
+        self.as_immut().eq(other)
+    }
+}
+
 impl<M: Mutability, T: Eq + ?Sized> Eq for GenRef<'_, M, T> {}
 
 impl<MT: Mutability, MU: Mutability, T: ?Sized, U: ?Sized> PartialOrd<GenRef<'_, MU, U>> for GenRef<'_, MT, T>
@@ -596,6 +604,14 @@ impl<MT: Mutability, T: ?Sized, U: ?Sized> PartialOrd<&U> for GenRef<'_, MT, T>
     where T: PartialOrd<U>
 {
     fn partial_cmp(&self, other: &&U) -> Option<core::cmp::Ordering> {
+        self.as_immut().partial_cmp(other)
+    }
+}
+
+impl<MT: Mutability, T: ?Sized, U: ?Sized> PartialOrd<&mut U> for GenRef<'_, MT, T>
+    where T: PartialOrd<U>
+{
+    fn partial_cmp(&self, other: &&mut U) -> Option<core::cmp::Ordering> {
         self.as_immut().partial_cmp(other)
     }
 }
