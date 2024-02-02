@@ -43,10 +43,10 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     /// - The pointer must point to an initialized instance of `T`.
     /// - The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     /// - Furthermore:
-    ///     o If the mutability is `Immutable`:
+    ///     - If the mutability is `Immutable`:
     ///         - The pointer must be valid for reads for lifetime `'a`.
     ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'a`.
-    ///     o If the mutability is `Mutable`:
+    ///     - If the mutability is `Mutable`:
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     unsafe fn dispatch<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> U
@@ -68,10 +68,10 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     /// - The pointer must point to an initialized instance of `T`.
     /// - The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     /// - Furthermore:
-    ///     o If the mutability is `Immutable`:
+    ///     - If the mutability is `Immutable`:
     ///         - The pointer must be valid for reads for lifetime `'a`.
     ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'a`.
-    ///     o If the mutability is `Mutable`:
+    ///     - If the mutability is `Mutable`:
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     /// 
@@ -102,10 +102,10 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     /// - The pointer must point to an initialized instance of `T`.
     /// - The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     /// - Furthermore:
-    ///     o If the mutability is `Immutable`:
+    ///     - If the mutability is `Immutable`:
     ///         - The pointer must be valid for reads for lifetime `'a`.
     ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'a`.
-    ///     o If the mutability is `Mutable`:
+    ///     - If the mutability is `Mutable`:
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     /// 

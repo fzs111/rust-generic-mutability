@@ -18,7 +18,7 @@ use crate::{ Immutable, Mutability, Mutable };
 
 // INVARIANT: `ptr` must be valid for reads and also for writes if `M` is `Mutable`, for lifetime `'s`
 
-
+// `#[repr(transparent)]` is used to enable niche optimization, but is *not* a layout guarantee! (You must not transmute between a `GenRef` and `NonNull`.)
 #[repr(transparent)]
 pub struct GenRef<'s, M: Mutability, T: ?Sized>{
     _lifetime: PhantomData<&'s mut T>,
@@ -42,10 +42,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// - The pointer must point to an initialized instance of `T`.
     /// - The lifetime `'a` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. Extra care must be taken to ensure that the correct lifetime is used.
     /// - Furthermore:
-    ///     o If the mutability is `Immutable`:
+    ///     - If the mutability is `Immutable`:
     ///         - The pointer must be valid for reads for lifetime `'a`.
     ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'a`.
-    ///     o If the mutability is `Mutable`:
+    ///     - If the mutability is `Mutable`:
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     #[inline]
@@ -240,6 +240,9 @@ impl<'s, T: ?Sized> GenRef<'s, Immutable, T> {
     ///
     /// This is used for unwrapping a `GenRef<'_, Immutable, T>` from the caller code, after the transformations are done.
     /// It is not accessible from generic code.
+    /// 
+    /// Note: implementing this method for a generic context would be sound, but using it that way would discard any mutable access the reference had. 
+    /// The same behvior can be achieved using `dispatch`.
     #[inline]
     pub fn into_immut(self) -> &'s T {
         unsafe{
