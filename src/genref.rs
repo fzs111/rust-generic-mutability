@@ -7,6 +7,7 @@ use core::hash::Hash;
 use core::borrow::{ Borrow, BorrowMut };
 use core::fmt::{ Debug, Display };
 
+use crate::primitives::{ ImmutIntoNonNull, MutIntoNonNull, NonNullIntoGenRef, Untouched };
 use crate::{ Immutable, Mutability, Mutable };
 
 /// `GenRef` is the main type of this crate. It is a safe type; it represents a reference with generic mutability.
@@ -57,7 +58,34 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             ptr,
         }
     }
-    
+
+    pub fn map_to_structure<U, UM, UIM, X>(
+        self,
+        moved: X,
+        fn_mut:   impl FnOnce(&'s mut T, X) -> UM,
+        fn_immut: impl FnOnce(&'s     T, X) -> UIM
+    ) -> <U as NonNullIntoGenRef<'s, M>>::Output
+        where
+            UM: MutIntoNonNull<'s, Output = U>,
+            UIM: ImmutIntoNonNull<'s, Output = U>,
+            U: NonNullIntoGenRef<'s, M>,
+    {
+        let nonnull_structure = unsafe{
+            //TODO: Add safety comment
+            M::map_to_structure(
+                self.ptr,
+                moved,
+                fn_mut,
+                fn_immut
+            )
+        };
+
+        unsafe{
+            //TODO: Add safety comment
+            NonNullIntoGenRef::into_genref(nonnull_structure)
+        }
+    }
+
     /// Calls either `fn_mut` or `fn_immut` depending on the mutability.
     /// Returns the value returned by the called closure.
     ///
@@ -68,15 +96,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             FM:  FnOnce(&'s mut T) -> U,
             FIM: FnOnce(&'s T) -> U,
     {
-        unsafe{
-            // SAFETY: the struct invariants ensure safety
-            M::dispatch(
-                self.ptr, 
-                (), 
-                |t, ()| fn_mut(t), 
-                |t, ()| fn_immut(t)
-            )
-        }
+        self.dispatch_with_move(
+            (),
+            |t, ()| fn_mut(t),
+            |t, ()| fn_immut(t)
+        )
     }
 
     /// Calls either `fn_mut` or `fn_immut` depending on the mutability, moving an arbitrary value `moved` into it. 
@@ -90,20 +114,23 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             FM:  FnOnce(&'s mut T, X) -> U,
             FIM: FnOnce(&'s T,     X) -> U,
     {
-        unsafe{
-            // SAFETY: the struct invariants ensure safety
-            M::dispatch(self.ptr, moved, fn_mut, fn_immut)
-        }
+        let Untouched(u) = self.map_to_structure(
+            moved,
+            |t, moved| Untouched(fn_mut(t, moved)),
+            |t, moved| Untouched(fn_immut(t, moved))
+        );
+
+        u
     }
-    
+
     /// Calls either `fn_mut` or `fn_immut` depending on the mutability.
     /// Returns the reference returned by the closure as a `GenRef`.
-    /// 
+    ///
     /// Capturing the same values with both closures will not work: if you need to do that, use the `map_with_move` method instead.
     /// If you want to call a function with the value of `self` (without unwrapping it), use the `call` method.
     #[inline]
     pub fn map<U, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> GenRef<'s, M, U>
-        where 
+        where
             U: ?Sized,
             FM:  FnOnce(&'s mut T) -> &'s mut U,
             FIM: FnOnce(&'s T) -> &'s U,
@@ -127,12 +154,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             FM:  FnOnce(&'s mut T, X) -> &'s mut U,
             FIM: FnOnce(&'s T,     X) -> &'s U,
     {
-        unsafe {
-            // SAFETY: the struct invariants ensure safety for `map`
-            // SAFETY: `map` guarantees the returned pointer is safe for `GenRef::new`
-            // SAFETY: all lifetimes are constrained to `'s` by the function signature
-            GenRef::new(M::map(self.ptr, moved, fn_mut, fn_immut))
-        }
+        self.map_to_structure(
+            moved, 
+            fn_mut, 
+            fn_immut
+        )
     }
 
     /// Gets the underlying pointer.
@@ -225,13 +251,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             FM:  FnOnce(&'s mut T, X) -> (&'s mut U, &'s mut V),
             FIM: FnOnce(&'s T,     X) -> (&'s U, &'s V)
     {
-        unsafe {
-            // SAFETY: the struct invariants ensure safety for `split`
-            // SAFETY: `split` guarantees both returned pointers are safe for `GenRef::new`
-            // SAFETY: all lifetimes are constrained to `'s` by the function signature
-            let (a, b) = M::split(self.ptr, moved, fn_mut, fn_immut);
-            (GenRef::new(a), GenRef::new(b))
-        }
+        self.map_to_structure(
+            moved,
+            fn_mut,
+            fn_immut
+        )
     }
 }
 

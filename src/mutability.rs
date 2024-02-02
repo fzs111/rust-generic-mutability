@@ -1,5 +1,7 @@
 use core::ptr::NonNull;
 
+use crate::primitives::{ImmutIntoNonNull, MutIntoNonNull};
+
 pub(crate) mod seal{
     pub trait MutabilitySealed {}
 }
@@ -22,6 +24,7 @@ impl seal::MutabilitySealed for Mutable{}
 
 impl seal::MutabilitySealed for Immutable{}
 
+/*
 /// This is the core primitive of this crate. 
 /// It exposes raw, pointer-to-pointer operations for both mutability values.
 /// This trait is used as a bound for all items that are generic over mutability.
@@ -236,4 +239,74 @@ unsafe impl Mutability for Immutable{
     fn is_mutable() -> bool {
         false
     }
+}
+*/
+
+/// This is the core primitive of this crate.
+/// It exposes raw, pointer-to-pointer operations for both mutability values.
+/// This trait is used as a bound for all items that are generic over mutability.
+///
+/// It is implemented for two types, `Mutable` and `Immutable`, and it is sealed, so no other types can implement it.
+pub trait Mutability: seal::MutabilitySealed {
+    unsafe fn map_to_structure<'a, T, U, UM, UIM, X>(
+        ptr: NonNull<T>,
+        moved: X,
+        fn_mut:   impl FnOnce(&'a mut T, X) -> UM,
+        fn_immut: impl FnOnce(&'a     T, X) -> UIM
+    ) -> U
+        where
+            T: 'a + ?Sized,
+            UM: MutIntoNonNull<'a, Output = U>,
+            UIM: ImmutIntoNonNull<'a, Output = U>;
+
+    /// Is `true` if the mutability is `Mutable` and `false` if the mutability is `Immutable`.
+    ///
+    /// This can be used to observe the mutability of the value at runtime.
+    /// Consider using `dispatch` or `map` instead for compile-time resolution.
+    ///
+    /// This constant has to be implemented correctly and `unsafe` code can rely on this guarantee.
+    const IS_MUTABLE: bool;
+}
+
+impl Mutability for Mutable {
+    unsafe fn map_to_structure<'a, T, U, UM, UIM, X>(
+        ptr: NonNull<T>,
+        moved: X,
+        fn_mut:    impl FnOnce(&'a mut T, X) -> UM,
+        _fn_immut: impl FnOnce(&'a     T, X) -> UIM
+    ) -> U
+        where
+            T: 'a + ?Sized,
+            UM: MutIntoNonNull<'a, Output = U>,
+            UIM: ImmutIntoNonNull<'a, Output = U>
+    {
+        let reference = unsafe{
+            //TODO: Add safety comment
+            &mut *ptr.as_ptr()
+        };
+        MutIntoNonNull::into_nonnull(fn_mut(reference, moved))
+    }
+
+    const IS_MUTABLE: bool = true;
+}
+impl Mutability for Immutable {
+    unsafe fn map_to_structure<'a, T, U, UM, UIM, X>(
+        ptr: NonNull<T>,
+        moved: X,
+        _fn_mut:  impl FnOnce(&'a mut T, X) -> UM,
+        fn_immut: impl FnOnce(&'a     T, X) -> UIM
+    ) -> U
+        where
+            T: 'a + ?Sized,
+            UM: MutIntoNonNull<'a, Output = U>,
+            UIM: ImmutIntoNonNull<'a, Output = U>
+    {
+        let reference = unsafe{
+            //TODO: Add safety comment
+            & *ptr.as_ptr()
+        };
+        ImmutIntoNonNull::into_nonnull(fn_immut(reference, moved))
+    }
+
+    const IS_MUTABLE: bool = false;
 }

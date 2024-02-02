@@ -82,10 +82,10 @@ Expected enum variant GenRefEnum::{target}
 impl<'a, M: Mutability, T: ?Sized> TryFrom<GenRefEnum<'a, T>> for GenRef<'a, M, T> {
     type Error = IncorrectMutability;
     fn try_from(genref_enum: GenRefEnum<'a, T>) -> Result<Self, Self::Error> {
-        match (M::is_mutable(), genref_enum) {
+        match (M::IS_MUTABLE, genref_enum) {
             (true, GenRefEnum::Mutable(r)) => {
                 unsafe{
-                    // SAFETY: `M::is_mutable()` guarantees correct result, so `M` must be `Mutable`
+                    // SAFETY: `M::IS_MUTABLE` guarantees correct result, so `M` must be `Mutable`
                     // SAFETY: the pointer is obtained from a unique reference,
                     //         so it satisfies all invariants of `GenRef<'a, Mutable, T>`
                     Ok(GenRef::new(NonNull::from(r)))
@@ -93,7 +93,7 @@ impl<'a, M: Mutability, T: ?Sized> TryFrom<GenRefEnum<'a, T>> for GenRef<'a, M, 
             },
             (false, GenRefEnum::Immutable(r)) => {
                 unsafe{
-                    // SAFETY: `M::is_mutable()` guarantees correct result, so `M` must be `Immutable`
+                    // SAFETY: `M::IS_MUTABLE` guarantees correct result, so `M` must be `Immutable`
                     // SAFETY: the pointer is obtained from a shared reference,
                     //         so it satisfies all invariants of `GenRef<'a, Immutable, T>`
                     Ok(GenRef::new(NonNull::from(r)))
