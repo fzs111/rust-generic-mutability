@@ -91,7 +91,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     /// If you do not need to capture any values, you can pass `()` to ignore it.
     ///
     /// Note: it is not yet decided whether this will be generalized to support n-way splitting.
-    /// Two implementations already exist, see the `split-tuples-macros` and `split-cons` branches.
+    /// Three implementations already exist, see the `primitives`, `split-tuples-macros` and `split-cons` branches.
     /// If you have a use case that requires more than 2-way splitting, please tell me about it in an issue.
     ///
     /// ## Safety

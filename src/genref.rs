@@ -191,7 +191,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// Capturing the same values with both closures will not work: if you need to do that, use the `split_with_move` method instead.
     ///
     /// Note: it is not yet decided whether this will be generalized to support n-way splitting.
-    /// Two implementations already exist, see the `split-tuples-macros` and `split-cons` branches.
+    /// Three implementations already exist, see the `primitives`, `split-tuples-macros` and `split-cons` branches.
     /// If you have a use case that requires more than 2-way splitting, please tell me about it in an issue.
     #[inline]
     pub fn split<U, V, FM, FIM>(self, fn_mut: FM, fn_immut: FIM) -> (GenRef<'s, M, U>, GenRef<'s, M, V>)
@@ -215,7 +215,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// You can move these values into the closure via the `moved` argument. If you need to move more than one values, use a tuple as the `moved` argument; if you do not need to move any values, you can use the `split` method instead.
     ///
     /// Note: it is not yet decided whether this will be generalized to support n-way splitting.
-    /// Two implementations already exist, see the `split-tuples-macros` and `split-cons` branches.
+    /// Three implementations already exist, see the `primitives`, `split-tuples-macros` and `split-cons` branches.
     /// If you have a use case that requires more than 2-way splitting, please tell me about it in an issue.
     #[inline]
     pub fn split_with_move<U, V, X, FM, FIM>(self, moved: X, fn_mut: FM, fn_immut: FIM) -> (GenRef<'s, M, U>, GenRef<'s, M, V>)
