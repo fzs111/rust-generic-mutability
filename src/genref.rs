@@ -1,3 +1,4 @@
+use core::hint::unreachable_unchecked;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 
@@ -245,11 +246,13 @@ impl<'s, T: ?Sized> GenRef<'s, Immutable, T> {
     /// The same behvior can be achieved using `dispatch`.
     #[inline]
     pub fn into_immut(self) -> &'s T {
-        unsafe{
-            // SAFETY: the struct invariants ensure safety
-            // SAFETY: the returned lifetime is constrained to `'s` by the function signature
-            self.ptr.as_ref()
-        }
+        self.dispatch(
+            |r| {
+                //This branch is not reachable, but the implementation is correct.
+                &*r
+            },
+            |r| r
+        )
     }
 }
 
@@ -260,11 +263,13 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
     /// This method is only implemented for `GenRef<'_, Mutable, T>`, so it is not accessible from generic code.
     #[inline]
     pub fn as_mut(&mut self) -> &mut T {
-        unsafe {
-            // SAFETY: only implemented where `M` is `Mutable`, so the struct invariants ensure safety
-            // SAFETY: the returned lifetime is constrained to an elided lifetime by the function signature
-            self.ptr.as_mut()
-        }
+        self.reborrow().dispatch(
+            |r| r,
+            |_| unsafe {
+                // SAFETY: only implemented where `M` is `Mutable`
+                unreachable_unchecked()
+            }
+        )
     }
 
     /// Converts the `GenRef` into a mutable reference for the entire lifetime of the `GenRef`.
@@ -272,12 +277,14 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
     /// This is used for unwrapping a `GenRef<'_ Mutable, T>` from the caller code, after the transformations are done.
     /// It is not accessible from generic code.
     #[inline]
-    pub fn into_mut(mut self) -> &'s mut T {
-        unsafe{
-            // SAFETY: only implemented where `M` is `Mutable`, so the struct invariants ensure safety
-            // SAFETY: the returned lifetime is constrained to `'s` by the function signature
-            self.ptr.as_mut()
-        }
+    pub fn into_mut(self) -> &'s mut T {
+        self.dispatch(
+            |r| r,
+            |_| unsafe {
+                // SAFETY: only implemented where `M` is `Mutable`
+                unreachable_unchecked()
+            }
+        )
     }
 }
 
