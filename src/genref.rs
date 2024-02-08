@@ -7,7 +7,7 @@ use core::hash::Hash;
 use core::borrow::{ Borrow, BorrowMut };
 use core::fmt::{ Debug, Display };
 
-use crate::primitives::{ ImmutIntoNonNull, MutIntoNonNull, NonNullIntoGenRef, Untouched };
+use crate::primitives::{ StructureImmutIntoNonNull, StructureMutIntoNonNull, StructureNonNullIntoGenRef, Untouched };
 use crate::{ Immutable, Mutability, Mutable };
 
 /// `GenRef` is the main type of this crate. It is a safe type; it represents a reference with generic mutability.
@@ -64,11 +64,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         moved: X,
         fn_mut:   impl FnOnce(&'s mut T, X) -> UM,
         fn_immut: impl FnOnce(&'s     T, X) -> UIM
-    ) -> <U as NonNullIntoGenRef<'s, M>>::Output
+    ) -> <U as StructureNonNullIntoGenRef<'s, M>>::Output
         where
-            UM: MutIntoNonNull<'s, Output = U>,
-            UIM: ImmutIntoNonNull<'s, Output = U>,
-            U: NonNullIntoGenRef<'s, M>,
+            UM: StructureMutIntoNonNull<'s, Output = U>,
+            UIM: StructureImmutIntoNonNull<'s, Output = U>,
+            U: StructureNonNullIntoGenRef<'s, M>,
     {
         let nonnull_structure = unsafe{
             //TODO: Add safety comment
@@ -82,7 +82,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
 
         unsafe{
             //TODO: Add safety comment
-            NonNullIntoGenRef::into_genref(nonnull_structure)
+            StructureNonNullIntoGenRef::into_genref_structure(nonnull_structure)
         }
     }
 

@@ -1,6 +1,6 @@
 use core::ptr::NonNull;
 
-use crate::primitives::{ImmutIntoNonNull, MutIntoNonNull};
+use crate::primitives::{StructureImmutIntoNonNull, StructureMutIntoNonNull};
 
 pub(crate) mod seal{
     pub trait MutabilitySealed {}
@@ -258,8 +258,8 @@ pub unsafe trait Mutability: seal::MutabilitySealed {
     ) -> U
         where
             T: 'a + ?Sized,
-            UM: MutIntoNonNull<'a, Output = U>,
-            UIM: ImmutIntoNonNull<'a, Output = U>;
+            UM: StructureMutIntoNonNull<'a, Output = U>,
+            UIM: StructureImmutIntoNonNull<'a, Output = U>;
 
     /// Is `true` if the mutability is `Mutable` and `false` if the mutability is `Immutable`.
     ///
@@ -280,14 +280,14 @@ unsafe impl Mutability for Mutable {
     ) -> U
         where
             T: 'a + ?Sized,
-            UM: MutIntoNonNull<'a, Output = U>,
-            UIM: ImmutIntoNonNull<'a, Output = U>
+            UM: StructureMutIntoNonNull<'a, Output = U>,
+            UIM: StructureImmutIntoNonNull<'a, Output = U>
     {
         let reference = unsafe{
             //TODO: Add safety comment
             &mut *ptr.as_ptr()
         };
-        MutIntoNonNull::into_nonnull(fn_mut(reference, moved))
+        StructureMutIntoNonNull::into_nonnull_structure(fn_mut(reference, moved))
     }
 
     const IS_MUTABLE: bool = true;
@@ -301,14 +301,14 @@ unsafe impl Mutability for Immutable {
     ) -> U
         where
             T: 'a + ?Sized,
-            UM: MutIntoNonNull<'a, Output = U>,
-            UIM: ImmutIntoNonNull<'a, Output = U>
+            UM: StructureMutIntoNonNull<'a, Output = U>,
+            UIM: StructureImmutIntoNonNull<'a, Output = U>
     {
         let reference = unsafe{
             //TODO: Add safety comment
             & *ptr.as_ptr()
         };
-        ImmutIntoNonNull::into_nonnull(fn_immut(reference, moved))
+        StructureImmutIntoNonNull::into_nonnull_structure(fn_immut(reference, moved))
     }
 
     const IS_MUTABLE: bool = false;
