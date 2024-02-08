@@ -36,7 +36,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// 
     /// To safely attempt to convert a known-mutability reference to a generic `GenRef`, use the `TryFrom<GenRefEnum<'_, T>>` implementation.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `GenRef` is a safe reference type. Using this method is equivalent to dereferencing the pointer and creating a reference from it. As such:
     ///

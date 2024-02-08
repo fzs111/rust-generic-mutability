@@ -38,7 +38,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     /// Capturing the same values with both closures will not work: instead, you can use `moved` helper argument to move the values into the closure that is actually called.
     /// If you do not need to capture any values, you can pass `()` to ignore it. 
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `ptr` will be dereferenced and converted to a reference of the chosen mutability. As such:
     ///
@@ -63,7 +63,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     /// Capturing the same values with both closures will not work: instead, you can use `moved` helper argument to move the values into the closure that is actually called.
     /// If you do not need to capture any values, you can pass `()` to ignore it. 
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `ptr` will be dereferenced and converted to a reference of the chosen mutability. As such:
     ///
@@ -78,7 +78,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     /// 
-    /// ## Guarantees
+    /// # Guarantees
     /// 
     /// The returned pointer also satisfies all requirements listed in the Safety section. `unsafe` code may rely on this guarantee.
     unsafe fn map<'a, T, U, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> NonNull<U>
@@ -97,7 +97,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     /// Three implementations already exist, see the `primitives`, `split-tuples-macros` and `split-cons` branches.
     /// If you have a use case that requires more than 2-way splitting, please tell me about it in an issue.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// `ptr` will be dereferenced and converted to a reference of the chosen mutability. As such:
     ///
@@ -112,7 +112,7 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     ///         - The pointer must be valid for reads and writes for lifetime `'a`.
     ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no references to it may exist during `'a`.
     /// 
-    /// ## Guarantees
+    /// # Guarantees
     /// 
     /// Both returned pointers also satisfy all requirements listed in the Safety section. `unsafe` code may rely on this guarantee.
     unsafe fn split<'a, T, U, V, X, FM, FIM>(ptr: NonNull<T>, moved: X, fn_mut: FM, fn_immut: FIM) -> (NonNull<U>, NonNull<V>)
@@ -128,6 +128,8 @@ pub unsafe trait Mutability: seal::MutabilitySealed{
     /// This can be used to observe the mutability of the value at runtime.
     /// Consider using `dispatch` or `map` instead for compile-time resolution.
     ///
+    /// # Guarantees
+    /// 
     /// This method has to be implemented correctly and `unsafe` code can rely on this guarantee.
     fn is_mutable() -> bool;
 }
