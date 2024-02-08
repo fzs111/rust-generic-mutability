@@ -249,7 +249,7 @@ unsafe impl Mutability for Immutable{
 /// This trait is used as a bound for all items that are generic over mutability.
 ///
 /// It is implemented for two types, `Mutable` and `Immutable`, and it is sealed, so no other types can implement it.
-pub trait Mutability: seal::MutabilitySealed {
+pub unsafe trait Mutability: seal::MutabilitySealed {
     unsafe fn map_to_structure<'a, T, U, UM, UIM, X>(
         ptr: NonNull<T>,
         moved: X,
@@ -270,7 +270,8 @@ pub trait Mutability: seal::MutabilitySealed {
     const IS_MUTABLE: bool;
 }
 
-impl Mutability for Mutable {
+unsafe impl Mutability for Mutable {
+
     unsafe fn map_to_structure<'a, T, U, UM, UIM, X>(
         ptr: NonNull<T>,
         moved: X,
@@ -291,7 +292,7 @@ impl Mutability for Mutable {
 
     const IS_MUTABLE: bool = true;
 }
-impl Mutability for Immutable {
+unsafe impl Mutability for Immutable {
     unsafe fn map_to_structure<'a, T, U, UM, UIM, X>(
         ptr: NonNull<T>,
         moved: X,
