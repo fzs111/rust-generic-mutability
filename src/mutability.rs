@@ -27,6 +27,12 @@ impl seal::MutabilitySealed for Immutable{}
 /// This trait is used as a bound for all items that are generic over mutability.
 ///
 /// It is implemented for two types, `Mutable` and `Immutable`, and it is sealed, so no other types can implement it.
+/// 
+/// # Safety
+/// 
+/// Both implementations must satisfy all guarantees (as specified by the *Guarantees* sections of the trait items).
+/// 
+/// Users of this crate can not implement this trait.
 pub unsafe trait Mutability: seal::MutabilitySealed{
 
     /// Casts the pointer to a reference and calls either `fn_mut` or `fn_immut` depending on the mutability. 
