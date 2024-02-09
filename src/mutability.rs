@@ -93,7 +93,7 @@ unsafe impl Mutability for Mutable {
             UIM: StructureImmutIntoNonNull<'a, Output = U>
     {
         let reference = unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the caller must uphold the safety contract
             &mut *ptr.as_ptr()
         };
         StructureMutIntoNonNull::into_nonnull_structure(fn_mut(reference, moved))
@@ -114,7 +114,7 @@ unsafe impl Mutability for Immutable {
             UIM: StructureImmutIntoNonNull<'a, Output = U>
     {
         let reference = unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the caller must uphold the safety contract
             & *ptr.as_ptr()
         };
         StructureImmutIntoNonNull::into_nonnull_structure(fn_immut(reference, moved))

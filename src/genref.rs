@@ -71,7 +71,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             U: StructureNonNullIntoGenRef<'s, M>,
     {
         let nonnull_structure = unsafe{
-            //TODO: Add safety comment
+            // SAFETY: the struct invariants ensure safety
             M::map_to_structure(
                 self.ptr,
                 moved,
@@ -81,7 +81,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         };
 
         unsafe{
-            //TODO: Add safety comment
+            // SAFETY: M::map_to_structure guarantees the validity of the `NonNull`-structure
+            // SAFETY: The lifetime and Mutability are specified correctly in the signature
             StructureNonNullIntoGenRef::into_genref_structure(nonnull_structure)
         }
     }
