@@ -1,9 +1,10 @@
 use core::marker::PhantomData;
 
-pub trait Mutability: Sized {
+pub trait Mutability: Copy + Sized {
     fn mutability() -> MutabilityEnum<Self>;
 }
 
+#[derive(Clone, Copy)]
 pub enum Shared {}
 impl Mutability for Shared {
     fn mutability() -> MutabilityEnum<Self> {
@@ -22,6 +23,7 @@ impl Shared {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum Mutable {}
 impl Mutability for Mutable {
     fn mutability() -> MutabilityEnum<Self> {
