@@ -4,12 +4,12 @@ macro_rules! gen_mut{
         match <$m as $crate::Mutability>::mutability() {
             $crate::MutabilityEnum::Shared(proof) => {
                 macro_rules! into_gen {
-                    () => (|gen_ref| $crate::GenRef::shared_to_gen(gen_ref, proof));
-                    (&gen $gen_ref:expr) => ($crate::GenRef::shared_to_gen(& $gen_ref, proof));
-                    ($gen_ref:expr) => ($crate::GenRef::shared_to_gen($gen_ref, proof))
+                    () => (|gen_ref| $crate::GenRef::gen_from_shared(gen_ref, proof));
+                    (&gen $gen_ref:expr) => ($crate::GenRef::gen_from_shared(& $gen_ref, proof));
+                    ($gen_ref:expr) => ($crate::GenRef::gen_from_shared($gen_ref, proof))
                 }
                 macro_rules! from_gen {
-                    ($reference:expr) => ($crate::GenRef::gen_to_shared($reference))
+                    ($reference:expr) => ($crate::GenRef::gen_into_shared($reference, proof))
                 }
                 #[allow(unused_macros)]
                 macro_rules! switch_mut_shared {
@@ -19,12 +19,12 @@ macro_rules! gen_mut{
             },
             $crate::MutabilityEnum::Mutable(proof) => {
                 macro_rules! into_gen {
-                    () => (|gen_ref| $crate::GenRef::mut_to_gen(gen_ref, proof));
-                    (&gen $gen_ref:expr) => ($crate::GenRef::mut_to_gen(&mut $gen_ref, proof));
-                    ($gen_ref:expr) => ($crate::GenRef::mut_to_gen($gen_ref, proof))
+                    () => (|gen_ref| $crate::GenRef::gen_from_mut(gen_ref, proof));
+                    (&gen $gen_ref:expr) => ($crate::GenRef::gen_from_mut(&mut $gen_ref, proof));
+                    ($gen_ref:expr) => ($crate::GenRef::gen_from_mut($gen_ref, proof))
                 }
                 macro_rules! from_gen {
-                    ($reference:expr) => ($crate::GenRef::gen_to_mut($reference, proof))
+                    ($reference:expr) => ($crate::GenRef::gen_into_mut($reference, proof))
                 }
                 #[allow(unused_macros)]
                 macro_rules! switch_mut_shared {
