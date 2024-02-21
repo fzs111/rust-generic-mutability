@@ -25,5 +25,5 @@ fn map_macro() {
 fn map_macro_with_get() {
     let mut vec = vec![1, 2, 3];
     let elem = gen_get(GenRef::from(&mut vec), 1);
-    //assert_eq!(elem, Some(2));
+    assert!(elem.is_some_and(|e| e == &2));
 }

@@ -14,6 +14,9 @@ impl<'s, T: ?Sized> ErasedMutRef<'s, T> {
             ptr
         }
     }
+    pub fn as_ptr(&self) -> NonNull<T> {
+        self.ptr
+    }
     pub fn as_ref(&self) -> &T {
         unsafe{
             self.ptr.as_ref()
