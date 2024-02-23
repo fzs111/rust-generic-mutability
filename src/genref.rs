@@ -33,6 +33,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
+    pub fn as_ptr(genref: &Self) -> NonNull<T> {
+        genref.ptr
+    }
+
     pub fn gen_from_mut_downgrading(reference: &'s mut T) -> Self {
         let erased = ErasedMutRef::from(reference);
 
@@ -65,6 +69,15 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         let erased = ErasedMutRef::from(reference);
         unsafe{
             GenRef::from_erased_unchecked(erased)
+        }
+    }
+
+    pub fn reborrow(genref: &mut Self) -> GenRef<'_, M, T> {
+        let erased = unsafe{
+            ErasedMutRef::new_unchecked(genref.ptr)
+        };
+        unsafe{
+            Self::from_erased_unchecked(erased)
         }
     }
 }
@@ -101,7 +114,7 @@ impl<M: Mutability, T: ?Sized> Deref for GenRef<'_, M, T> {
 }
 impl<T: ?Sized> DerefMut for GenRef<'_, Mutable, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        todo!()
+        GenRef::into_mut(GenRef::reborrow(self))
     }
 }
 
