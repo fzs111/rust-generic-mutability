@@ -9,6 +9,7 @@ macro_rules! gen_mut{
                     ($gen_ref:expr) => ($crate::GenRef::gen_from_shared($gen_ref, proof))
                 }
                 macro_rules! from_gen {
+                    () => (|gen_ref| $crate::GenRef::gen_into_shared(gen_ref, proof));
                     ($reference:expr) => ($crate::GenRef::gen_into_shared($reference, proof))
                 }
                 #[allow(unused_macros)]
@@ -24,6 +25,7 @@ macro_rules! gen_mut{
                     ($gen_ref:expr) => ($crate::GenRef::gen_from_mut($gen_ref, proof))
                 }
                 macro_rules! from_gen {
+                    () => (|gen_ref| $crate::GenRef::gen_into_mut(gen_ref, proof));
                     ($reference:expr) => ($crate::GenRef::gen_into_mut($reference, proof))
                 }
                 #[allow(unused_macros)]
