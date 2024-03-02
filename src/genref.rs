@@ -87,8 +87,8 @@ impl<'s, T: ?Sized> GenRef<'s, Shared, T> {
         Self::gen_into_shared(genref, Shared::mutability())
     }
 }
-impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
-    pub fn into_mut(genref: Self) -> &'s mut T {
+impl<'s: 'm, 'm, T: ?Sized> GenRef<'s, Mutable<'m>, T> {
+    pub fn into_mut(genref: Self) -> &'m mut T {
         Self::gen_into_mut(genref, Mutable::mutability())
     }
 }
@@ -98,8 +98,8 @@ impl<'s, T: ?Sized> From<&'s T> for GenRef<'s, Shared, T> {
         GenRef::gen_from_shared(reference, Shared::mutability())
     }
 }
-impl<'s, T: ?Sized> From<&'s mut T> for GenRef<'s, Mutable, T> {
-    fn from(reference: &'s mut T) -> Self {
+impl<'s: 'm, 'm, T: ?Sized> From<&'m mut T> for GenRef<'s, Mutable<'m>, T> {
+    fn from(reference: &'m mut T) -> Self {
         GenRef::gen_from_mut(reference, Mutable::mutability())
     }
 }
@@ -112,7 +112,7 @@ impl<M: Mutability, T: ?Sized> Deref for GenRef<'_, M, T> {
         }
     }
 }
-impl<T: ?Sized> DerefMut for GenRef<'_, Mutable, T> {
+impl<T: ?Sized> DerefMut for GenRef<'_, Mutable<'_>, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         GenRef::into_mut(GenRef::reborrow(self))
     }
@@ -130,7 +130,7 @@ impl<M: Mutability, T: ?Sized> Borrow<T> for GenRef<'_, M, T> {
         &**self
     }
 }
-impl<T: ?Sized> BorrowMut<T> for GenRef<'_, Mutable, T> {
+impl<T: ?Sized> BorrowMut<T> for GenRef<'_, Mutable<'_>, T> {
     fn borrow_mut(&mut self) -> &mut T {
         &mut **self
     }
@@ -236,7 +236,7 @@ impl<M: Mutability, T: ?Sized> std::net::ToSocketAddrs for GenRef<'_, Shared, T>
     }
 }
 
-impl<T: ?Sized> fmt::Write for GenRef<'_, Mutable, T> 
+impl<T: ?Sized> fmt::Write for GenRef<'_, Mutable<'_>, T> 
     where T: fmt::Write
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -244,7 +244,7 @@ impl<T: ?Sized> fmt::Write for GenRef<'_, Mutable, T>
     }
 }
 
-impl<T: ?Sized> Iterator for GenRef<'_, Mutable, T> 
+impl<T: ?Sized> Iterator for GenRef<'_, Mutable<'_>, T> 
     where T: Iterator
 {
     type Item = T::Item;
@@ -254,7 +254,7 @@ impl<T: ?Sized> Iterator for GenRef<'_, Mutable, T>
 }
 
 
-impl<T: ?Sized> DoubleEndedIterator for GenRef<'_, Mutable, T> 
+impl<T: ?Sized> DoubleEndedIterator for GenRef<'_, Mutable<'_>, T> 
     where T: DoubleEndedIterator
 {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -262,7 +262,7 @@ impl<T: ?Sized> DoubleEndedIterator for GenRef<'_, Mutable, T>
     }
 }
 
-impl<T: ?Sized> ExactSizeIterator for GenRef<'_, Mutable, T> 
+impl<T: ?Sized> ExactSizeIterator for GenRef<'_, Mutable<'_>, T> 
     where T: ExactSizeIterator
 {
     fn len(&self) -> usize {
@@ -270,7 +270,7 @@ impl<T: ?Sized> ExactSizeIterator for GenRef<'_, Mutable, T>
     }
 }
 
-impl<T: ?Sized> FusedIterator for GenRef<'_, Mutable, T>
+impl<T: ?Sized> FusedIterator for GenRef<'_, Mutable<'_>, T>
     where T: FusedIterator
 {}
 

@@ -23,9 +23,11 @@ impl Shared {
     }
 }
 
+
 #[derive(Clone, Copy)]
-pub enum Mutable {}
-impl Mutability for Mutable {
+pub struct Mutable<'a> (PhantomData<&'a mut ()>);
+
+impl<'m> Mutability for Mutable<'m> {
     fn mutability() -> MutabilityEnum<Self> {
         let proof = unsafe{
             IsMutable::new()
@@ -34,8 +36,8 @@ impl Mutability for Mutable {
         MutabilityEnum::Mutable(proof)
     }
 }
-impl Mutable {
-    pub fn mutability() -> IsMutable<Mutable> {
+impl Mutable<'_> {
+    pub fn mutability() -> IsMutable<Self> {
         unsafe{
             IsMutable::new()
         }
