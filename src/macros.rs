@@ -41,6 +41,6 @@ macro_rules! gen_mut{
 #[macro_export]
 macro_rules! field {
     (&gen $genref:tt $(. $field:tt)+) => {
-        GenRef::map($genref, |r| &mut r $(. $field)+, |r| & r $(. $field)+)
+        $crate::GenRef::map($genref, |r| &mut r $(. $field)+, |r| & r $(. $field)+)
     };
 }
