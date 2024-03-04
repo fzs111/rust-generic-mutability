@@ -100,6 +100,12 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
 
         }
     }
+
+    pub fn as_deref(genref: Self) -> GenRef<'s, M, T::Target>
+        where T: Deref + DerefMut
+    {
+        GenRef::map(genref, DerefMut::deref_mut, Deref::deref)
+    }
 }
 
 impl<'s, T: ?Sized> GenRef<'s, Shared, T> {
