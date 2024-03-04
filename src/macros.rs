@@ -4,12 +4,12 @@ macro_rules! gen_mut{
         match <$m as $crate::Mutability>::mutability() {
             $crate::MutabilityEnum::Shared(proof) => {
                 macro_rules! into_gen {
-                    () => (|gen_ref| $crate::GenRef::gen_from_shared(gen_ref, proof));
-                    (&gen $gen_ref:expr) => ($crate::GenRef::gen_from_shared(& $gen_ref, proof));
-                    ($gen_ref:expr) => ($crate::GenRef::gen_from_shared($gen_ref, proof))
+                    () => (|genref| $crate::GenRef::gen_from_shared(genref, proof));
+                    (&gen $genref:expr) => ($crate::GenRef::gen_from_shared(& $genref, proof));
+                    ($genref:expr) => ($crate::GenRef::gen_from_shared($genref, proof))
                 }
                 macro_rules! from_gen {
-                    () => (|gen_ref| $crate::GenRef::gen_into_shared(gen_ref, proof));
+                    () => (|genref| $crate::GenRef::gen_into_shared(genref, proof));
                     ($reference:expr) => ($crate::GenRef::gen_into_shared($reference, proof))
                 }
                 #[allow(unused_macros)]
@@ -20,12 +20,12 @@ macro_rules! gen_mut{
             },
             $crate::MutabilityEnum::Mutable(proof) => {
                 macro_rules! into_gen {
-                    () => (|gen_ref| $crate::GenRef::gen_from_mut(gen_ref, proof));
-                    (&gen $gen_ref:expr) => ($crate::GenRef::gen_from_mut(&mut $gen_ref, proof));
-                    ($gen_ref:expr) => ($crate::GenRef::gen_from_mut($gen_ref, proof))
+                    () => (|genref| $crate::GenRef::gen_from_mut(genref, proof));
+                    (&gen $genref:expr) => ($crate::GenRef::gen_from_mut(&mut $genref, proof));
+                    ($genref:expr) => ($crate::GenRef::gen_from_mut($genref, proof))
                 }
                 macro_rules! from_gen {
-                    () => (|gen_ref| $crate::GenRef::gen_into_mut(gen_ref, proof));
+                    () => (|genref| $crate::GenRef::gen_into_mut(genref, proof));
                     ($reference:expr) => ($crate::GenRef::gen_into_mut($reference, proof))
                 }
                 #[allow(unused_macros)]
@@ -36,4 +36,11 @@ macro_rules! gen_mut{
             },
         }
     }
+}
+
+#[macro_export]
+macro_rules! field {
+    (&gen $genref:tt $(. $field:tt)+) => {
+        GenRef::map($genref, |r| &mut r $(. $field)+, |r| & r $(. $field)+)
+    };
 }

@@ -27,3 +27,27 @@ fn map_macro_with_get() {
     let elem = gen_get(GenRef::from(&mut vec), 1);
     assert!(elem.is_some_and(|e| e == &2));
 }
+
+
+struct Foo{
+    pub a: Bar,
+}
+struct Bar{
+    pub b: i32
+}
+
+impl Foo {
+    fn gen_b<M: Mutability>(foo: GenRef<'_, M, Foo>) -> GenRef<'_, M, i32> {
+        field!(&gen foo.a.b)
+    }
+}
+
+
+#[test]
+fn field_access_macro(){
+    let foo = Foo{ a: Bar{ b: 1 } };
+
+    let b = GenRef::into_shared(Foo::gen_b(GenRef::from(&foo)));
+
+    assert_eq!(b, &1)
+}
