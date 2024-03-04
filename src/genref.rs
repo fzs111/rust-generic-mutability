@@ -80,6 +80,26 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             Self::from_erased_unchecked(erased)
         }
     }
+
+    pub fn map<U: ?Sized>(
+        genref: Self, 
+        f_mut: impl FnOnce(&mut T) -> &mut U, 
+        f_shared: impl FnOnce(&T) -> &U
+    ) -> GenRef<'s, M, U> {
+        use crate::MutabilityEnum::*;
+
+        match M::mutability() {
+            Mutable(proof) => GenRef::gen_from_mut(
+                f_mut(GenRef::gen_into_mut(genref, proof)), 
+                proof
+            ),
+            Shared(proof) => GenRef::gen_from_shared(
+                f_shared(GenRef::gen_into_shared(genref, proof)), 
+                proof
+            ),
+
+        }
+    }
 }
 
 impl<'s, T: ?Sized> GenRef<'s, Shared, T> {
