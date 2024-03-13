@@ -7,7 +7,7 @@ use core::ops::{Deref, DerefMut};
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 
-use crate::erased_mut_ref::ErasedMutRef;
+use crate::erased_mutability_ref::ErasedMutabilityRef;
 use crate::mutability::{Mutability, Mutable, Shared, IsMutable, IsShared};
 
 #[repr(transparent)]
@@ -20,16 +20,16 @@ pub struct GenRef<'s, M: Mutability, T: ?Sized> {
 }
 
 impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
-    pub unsafe fn from_erased_unchecked(erased: ErasedMutRef<'s, T>) -> Self {
+    pub unsafe fn from_erased_unchecked(erased: ErasedMutabilityRef<'s, T>) -> Self {
         Self{
             _lifetime: PhantomData,
             _mutability: PhantomData,
             ptr: erased.as_ptr()
         }
     }
-    pub fn into_erased(genref: Self) -> ErasedMutRef<'s, T> {
+    pub fn into_erased(genref: Self) -> ErasedMutabilityRef<'s, T> {
         unsafe{
-            ErasedMutRef::new_unchecked(genref.ptr)
+            ErasedMutabilityRef::new_unchecked(genref.ptr)
         }
     }
 
@@ -38,7 +38,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     pub fn gen_from_mut_downgrading(reference: &'s mut T) -> Self {
-        let erased = ErasedMutRef::from(reference);
+        let erased = ErasedMutabilityRef::from(reference);
 
         unsafe {
             Self::from_erased_unchecked(erased)
@@ -56,7 +56,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
     pub fn gen_from_mut(reference: &'s mut T, _proof: IsMutable<M>) -> Self {
-        let erased = ErasedMutRef::from(reference);
+        let erased = ErasedMutabilityRef::from(reference);
         unsafe{
             GenRef::from_erased_unchecked(erased)
         }
@@ -66,7 +66,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         GenRef::into_erased(genref).into_ref()
     }
     pub fn gen_from_shared(reference: &'s T, _proof: IsShared<M>) -> Self {
-        let erased = ErasedMutRef::from(reference);
+        let erased = ErasedMutabilityRef::from(reference);
         unsafe{
             GenRef::from_erased_unchecked(erased)
         }
@@ -74,7 +74,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
 
     pub fn reborrow(genref: &mut Self) -> GenRef<'_, M, T> {
         let erased = unsafe{
-            ErasedMutRef::new_unchecked(genref.ptr)
+            ErasedMutabilityRef::new_unchecked(genref.ptr)
         };
         unsafe{
             Self::from_erased_unchecked(erased)
