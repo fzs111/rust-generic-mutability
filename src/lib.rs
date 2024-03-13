@@ -17,11 +17,11 @@
 //! fn get_gen<'a, M: Mutability>(GenRef<'a, M, T>, ...) -> GenRef<'a, M, U>
 //! ```
 
-mod erased_mut_ref;
+mod erased_mutability_ref;
 mod mutability;
 mod genref;
 mod macros;
 
-pub use erased_mut_ref::ErasedMutRef;
+pub use erased_mutability_ref::ErasedMutabilityRef;
 pub use mutability::{ Mutability, Mutable, Shared, MutabilityEnum, IsShared, IsMutable };
 pub use genref::GenRef;
