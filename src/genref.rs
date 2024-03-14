@@ -137,7 +137,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     /// Converts a generic `GenRef<'_, M, T>` into `&mut T`. 
-    /// This is available in generic context.
+    /// This is available in a generic context.
     /// 
     /// Once the transformations are done, the result can be converted back into a `GenRef` using the `gen_from_mut` function.
     /// 
@@ -151,7 +151,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
     /// Converts a `&mut T` into a generic `GenRef<'_, M, T>`. 
-    /// This is available in generic context.
+    /// This is available in a generic context.
     /// 
     /// The conversion requires that `M` is `Mutable`, this must be proven by passing an `IsMutable<M>` value.
     /// That can be obtained by `match`ing on `M::mutability()`.
@@ -165,7 +165,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     /// Converts a generic `GenRef<'_, M, T>` into `&T`. 
-    /// This is available in generic context.
+    /// This is available in a generic context.
     /// 
     /// Once the transformations are done, the result can be converted back into a `GenRef` using the `gen_from_shared` function.
     /// 
@@ -177,7 +177,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         GenRef::into_erased(genref).into_ref()
     }
     /// Converts a `&T` into a generic `GenRef<'_, M, T>`. 
-    /// This is available in generic context.
+    /// This is available in a generic context.
     /// 
     /// The conversion requires that `M` is `Shared`, this must be proven by passing an `IsShared<M>` value.
     /// That can be obtained by `match`ing on `M::mutability()`.
@@ -189,7 +189,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
     /// Generically reborrows a `GenRef`. 
     /// That is, it creates a shorter-lived owned `GenRef` from a `&mut GenRef`.
-    /// This is available in generic context.
+    /// This is available in a generic context.
     /// 
     /// This requires the variable to be marked `mut`, even if `M` is `Shared` and thus no mutation takes place.
     pub fn reborrow(genref: &mut Self) -> GenRef<'_, M, T> {
@@ -202,7 +202,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 
     /// Maps a generic `GenRef` into another one using either `f_mut` or `f_shared`. 
-    /// This is available in generic context.
+    /// This is available in a generic context.
     /// 
     /// Using this function is usually sufficient.
     /// For mapping over field access, you can use the `field!` macro instead.
@@ -227,6 +227,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
+    /// Generically dereferences the value contained in the `GenRef`.
+    /// This is available in a generic context.
     pub fn as_deref(genref: Self) -> GenRef<'s, M, T::Target>
         where T: Deref + DerefMut
     {
