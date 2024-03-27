@@ -1,6 +1,9 @@
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 
+/// Represents a reference of statically unknown ("erased") mutability, valid for reads for `'s`.
+/// 
+/// This type provides immutable (shared) access to the value
 #[repr(transparent)]
 pub struct ErasedMutabilityRef<'s, T: ?Sized> {
     _lifetime: PhantomData<&'s mut T>,
