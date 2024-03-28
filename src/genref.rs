@@ -10,7 +10,6 @@ use core::ptr::NonNull;
 #[cfg(any(feature = "std", doc))]
 extern crate std;
 
-use crate::erased_mutability_ref::ErasedMutabilityRef;
 use crate::mutability::{Mutability, Mutable, Shared, IsMutable, IsShared};
 
 /// This is the main type of this crate. 
@@ -93,16 +92,11 @@ pub struct GenRef<'s, M: Mutability, T: ?Sized> {
 }
 
 impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
-    pub unsafe fn from_erased_unchecked(erased: ErasedMutabilityRef<'s, T>) -> Self {
+    pub unsafe fn from_ptr_unchecked(ptr: NonNull<T>) -> Self {
         Self{
             _lifetime: PhantomData,
             _mutability: PhantomData,
-            ptr: erased.as_ptr()
-        }
-    }
-    pub fn into_erased(genref: Self) -> ErasedMutabilityRef<'s, T> {
-        unsafe{
-            ErasedMutabilityRef::new_unchecked(genref.ptr)
+            ptr
         }
     }
 
@@ -121,10 +115,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// If `M` is `Mutable` it behaves exactly the same way as `gen_from_mut` without requiring a proof for mutability.
     /// In this case, the difference between the two is purely semantic: if you have proof that `M` is `Mutable`, you should use `gen_from_mut`.
     pub fn gen_from_mut_downgrading(reference: &'s mut T) -> Self {
-        let erased = ErasedMutabilityRef::from(reference);
+        let ptr = NonNull::from(reference);
 
         unsafe {
-            Self::from_erased_unchecked(erased)
+            Self::from_ptr_unchecked(ptr)
         }
     }
 
@@ -133,7 +127,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// If `M` is `Shared` it behaves exactly the same way as `gen_into_shared` without requiring a proof for sharedness.
     /// In this case, the difference between the two is purely semantic: if you have proof that `M` is `Shared`, you should use `gen_into_shared`.
     pub fn gen_into_shared_downgrading(genref: Self) -> &'s T  {
-        Self::into_erased(genref).into_ref()
+        let ptr = GenRef::as_ptr(&genref);
+
+        unsafe{
+            ptr.as_ref()
+        }
     }
 
     /// Converts a generic `GenRef<'_, M, T>` into `&mut T`. 
@@ -144,10 +142,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// The conversion requires that `M` is `Mutable`, this must be proven by passing an `IsMutable<M>` value.
     /// That can be obtained by `match`ing on `M::mutability()`.
     pub fn gen_into_mut(genref: Self, _proof: IsMutable<M>) -> &'s mut T {
-        let erased = GenRef::into_erased(genref);
+        let mut ptr = GenRef::as_ptr(&genref);
 
         unsafe{
-            erased.into_mut()
+            ptr.as_mut()
         }
     }
     /// Converts a `&mut T` into a generic `GenRef<'_, M, T>`. 
@@ -158,10 +156,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// 
     /// If you want to force the conversion even if `M` is `Shared`, you can use the `gen_from_mut_downgrading` function.
     pub fn gen_from_mut(reference: &'s mut T, _proof: IsMutable<M>) -> Self {
-        let erased = ErasedMutabilityRef::from(reference);
-        unsafe{
-            GenRef::from_erased_unchecked(erased)
-        }
+        GenRef::gen_from_mut_downgrading(reference)
     }
 
     /// Converts a generic `GenRef<'_, M, T>` into `&T`. 
@@ -174,7 +169,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// 
     /// If you want to force the conversion even if `M` is `Mutable`, you can use the `gen_into_shared_downgrading` function.
     pub fn gen_into_shared(genref: Self, _proof: IsShared<M>) -> &'s T {
-        GenRef::into_erased(genref).into_ref()
+        GenRef::gen_into_shared_downgrading(genref)
     }
     /// Converts a `&T` into a generic `GenRef<'_, M, T>`. 
     /// This is available in a generic context.
@@ -182,9 +177,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// The conversion requires that `M` is `Shared`, this must be proven by passing an `IsShared<M>` value.
     /// That can be obtained by `match`ing on `M::mutability()`.
     pub fn gen_from_shared(reference: &'s T, _proof: IsShared<M>) -> Self {
-        let erased = ErasedMutabilityRef::from(reference);
-        unsafe{
-            GenRef::from_erased_unchecked(erased)
+        let ptr = NonNull::from(reference);
+
+        unsafe {
+            Self::from_ptr_unchecked(ptr)
         }
     }
     /// Generically reborrows a `GenRef`. 
@@ -193,11 +189,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     /// 
     /// This requires the variable to be marked `mut`, even if `M` is `Shared` and thus no mutation takes place.
     pub fn reborrow(genref: &mut Self) -> GenRef<'_, M, T> {
-        let erased = unsafe{
-            ErasedMutabilityRef::new_unchecked(genref.ptr)
-        };
-        unsafe{
-            Self::from_erased_unchecked(erased)
+        unsafe {
+            Self::from_ptr_unchecked(genref.ptr)
         }
     }
 
