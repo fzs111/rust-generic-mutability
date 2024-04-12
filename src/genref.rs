@@ -91,6 +91,62 @@ pub struct GenRef<'s, M: Mutability, T: ?Sized> {
     ptr: NonNull<T>
 }
 
+macro_rules! docs_for {
+    (as_ptr) => {
+         "Casts the reference into a `NonNull` pointer.
+
+The returned pointer is guaranteed to be valid for reads for `'s`, and also for writes if `M` is `Mutable`.
+
+The `GenRef` must not be used while the pointer is active. 
+The exact semantics of this depends on the memory model adopted by Rust." 
+    };
+    (gen_into_shared_downgrading) => {
+         "Converts a generic `GenRef<'_, M, T>` into `&T`, downgrading the reference if `M` is `Mutable`.
+
+If `M` is `Shared` it behaves exactly the same way as `gen_into_shared` without requiring a proof for sharedness.
+In this case, the difference between the two is purely semantic: if you have proof that `M` is `Shared`, you should use `gen_into_shared`." 
+    };
+    (gen_into_mut) => {
+         "Converts a generic `GenRef<'_, M, T>` into `&mut T`. 
+This is available in a generic context.
+
+Once the transformations are done, the result can be converted back into a `GenRef` using the `gen_from_mut` function.
+
+The conversion requires that `M` is `Mutable`, this must be proven by passing an `IsMutable<M>` value.
+That can be obtained by `match`ing on `M::mutability()`." 
+    };
+    (gen_into_shared) => {
+         "Converts a generic `GenRef<'_, M, T>` into `&T`. 
+This is available in a generic context.
+
+Once the transformations are done, the result can be converted back into a `GenRef` using the `gen_from_shared` function.
+
+The conversion requires that `M` is `Shared`, this must be proven by passing an `IsShared<M>` value.
+That can be obtained by `match`ing on `M::mutability()`.
+
+If you want to force the conversion even if `M` is `Mutable`, you can use the `gen_into_shared_downgrading` function." 
+    };
+    (reborrow) => {
+         "Generically reborrows a `GenRef`. 
+That is, it creates a shorter-lived owned `GenRef` from a `&mut GenRef`.
+This is available in a generic context.
+
+This requires the variable to be marked `mut`, even if `M` is `Shared` and thus no mutation takes place." 
+    };
+    (map) => {
+         "Maps a generic `GenRef` into another one using either `f_mut` or `f_shared`. 
+This is available in a generic context.
+
+Using this function is usually sufficient.
+For mapping over field access, you can use the `field!` macro instead.
+If you need more flexibility, you can use the `gen_mut!` macro or `match`ing over `M::mutability()`." 
+    };
+    (as_deref) => {
+         "Generically dereferences the value contained in the `GenRef`.
+This is available in a generic context." 
+    };
+}
+
 impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     pub unsafe fn from_ptr_unchecked(ptr: NonNull<T>) -> Self {
         Self{
@@ -100,12 +156,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    /// Casts the reference into a `NonNull` pointer.
-    /// 
-    /// The returned pointer is guaranteed to be valid for reads for `'s`, and also for writes if `M` is `Mutable`.
-    /// 
-    /// The `GenRef` must not be used while the pointer is active. 
-    /// The exact semantics of this depends on the memory model adopted by Rust.
+    #[doc = docs_for!(as_ptr)]
     pub fn as_ptr(genref: &Self) -> NonNull<T> {
         genref.ptr
     }
@@ -122,10 +173,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    /// Converts a generic `GenRef<'_, M, T>` into `&T`, downgrading the reference if `M` is `Mutable`.
-    /// 
-    /// If `M` is `Shared` it behaves exactly the same way as `gen_into_shared` without requiring a proof for sharedness.
-    /// In this case, the difference between the two is purely semantic: if you have proof that `M` is `Shared`, you should use `gen_into_shared`.
+    #[doc = docs_for!(gen_into_shared_downgrading)]
     pub fn gen_into_shared_downgrading(genref: Self) -> &'s T  {
         let ptr = GenRef::as_ptr(&genref);
 
@@ -134,13 +182,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    /// Converts a generic `GenRef<'_, M, T>` into `&mut T`. 
-    /// This is available in a generic context.
-    /// 
-    /// Once the transformations are done, the result can be converted back into a `GenRef` using the `gen_from_mut` function.
-    /// 
-    /// The conversion requires that `M` is `Mutable`, this must be proven by passing an `IsMutable<M>` value.
-    /// That can be obtained by `match`ing on `M::mutability()`.
+    #[doc = docs_for!(gen_into_mut)]
     pub fn gen_into_mut(genref: Self, _proof: IsMutable<M>) -> &'s mut T {
         let mut ptr = GenRef::as_ptr(&genref);
 
@@ -159,18 +201,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         GenRef::gen_from_mut_downgrading(reference)
     }
 
-    /// Converts a generic `GenRef<'_, M, T>` into `&T`. 
-    /// This is available in a generic context.
-    /// 
-    /// Once the transformations are done, the result can be converted back into a `GenRef` using the `gen_from_shared` function.
-    /// 
-    /// The conversion requires that `M` is `Shared`, this must be proven by passing an `IsShared<M>` value.
-    /// That can be obtained by `match`ing on `M::mutability()`.
-    /// 
-    /// If you want to force the conversion even if `M` is `Mutable`, you can use the `gen_into_shared_downgrading` function.
+    #[doc = docs_for!(gen_into_shared)]
     pub fn gen_into_shared(genref: Self, _proof: IsShared<M>) -> &'s T {
         GenRef::gen_into_shared_downgrading(genref)
     }
+
     /// Converts a `&T` into a generic `GenRef<'_, M, T>`. 
     /// This is available in a generic context.
     /// 
@@ -183,23 +218,15 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
             Self::from_ptr_unchecked(ptr)
         }
     }
-    /// Generically reborrows a `GenRef`. 
-    /// That is, it creates a shorter-lived owned `GenRef` from a `&mut GenRef`.
-    /// This is available in a generic context.
-    /// 
-    /// This requires the variable to be marked `mut`, even if `M` is `Shared` and thus no mutation takes place.
+
+    #[doc = docs_for!(reborrow)]
     pub fn reborrow(genref: &mut Self) -> GenRef<'_, M, T> {
         unsafe {
             Self::from_ptr_unchecked(genref.ptr)
         }
     }
 
-    /// Maps a generic `GenRef` into another one using either `f_mut` or `f_shared`. 
-    /// This is available in a generic context.
-    /// 
-    /// Using this function is usually sufficient.
-    /// For mapping over field access, you can use the `field!` macro instead.
-    /// If you need more flexibility, you can use the `gen_mut!` macro or `match`ing over `M::mutability()`.
+    #[doc = docs_for!(map)]
     pub fn map<U: ?Sized>(
         genref: Self, 
         f_mut: impl FnOnce(&mut T) -> &mut U, 
@@ -220,8 +247,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    /// Generically dereferences the value contained in the `GenRef`.
-    /// This is available in a generic context.
+    #[doc = docs_for!(as_deref)]
     pub fn as_deref(genref: Self) -> GenRef<'s, M, T::Target>
         where T: Deref + DerefMut
     {
@@ -230,22 +256,36 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
 }
 
 pub trait GenRefMethods<'s, M: Mutability, T: ?Sized> {
+    /// This is a method variant of the equivalent associated function on `GenRef`.
+    #[doc = docs_for!(as_ptr)]
     fn as_ptr(&self) -> NonNull<T>;
 
+    /// This is a method variant of the equivalent associated function on `GenRef`.
+    #[doc = docs_for!(gen_into_shared_downgrading)]
     fn gen_into_shared_downgrading(self) -> &'s T;
 
+    /// This is a method variant of the equivalent associated function on `GenRef`.
+    #[doc = docs_for!(gen_into_mut)]
     fn gen_into_mut(self, _proof: IsMutable<M>) -> &'s mut T;
 
+    /// This is a method variant of the equivalent associated function on `GenRef`.
+    #[doc = docs_for!(gen_into_shared)]
     fn gen_into_shared(self, _proof: IsShared<M>) -> &'s T ;
     fn gen_from_shared(reference: &'s T, _proof: IsShared<M>) -> Self;
+    /// This is a method variant of the equivalent associated function on `GenRef`.
+    #[doc = docs_for!(reborrow)]
     fn reborrow(&mut self) -> GenRef<'_, M, T>;
 
+    /// This is a method variant of the equivalent associated function on `GenRef`.
+    #[doc = docs_for!(map)]
     fn map<U: ?Sized>(
         self, 
         f_mut: impl FnOnce(&mut T) -> &mut U, 
         f_shared: impl FnOnce(&T) -> &U
     ) -> GenRef<'s, M, U>;
 
+    /// This is a method variant of the equivalent associated function on `GenRef`.
+    #[doc = docs_for!(as_deref)]
     fn as_deref(self) -> GenRef<'s, M, T::Target>
         where T: Deref + DerefMut;
 }
