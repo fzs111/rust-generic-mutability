@@ -271,7 +271,6 @@ pub trait GenRefMethods<'s, M: Mutability, T: ?Sized> {
     /// This is a method variant of the equivalent associated function on `GenRef`.
     #[doc = docs_for!(gen_into_shared)]
     fn gen_into_shared(self, _proof: IsShared<M>) -> &'s T ;
-    fn gen_from_shared(reference: &'s T, _proof: IsShared<M>) -> Self;
     /// This is a method variant of the equivalent associated function on `GenRef`.
     #[doc = docs_for!(reborrow)]
     fn reborrow(&mut self) -> GenRef<'_, M, T>;
@@ -291,40 +290,22 @@ pub trait GenRefMethods<'s, M: Mutability, T: ?Sized> {
 }
 impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> {
     fn as_ptr(&self) -> NonNull<T> {
-        self.ptr
+        GenRef::as_ptr(&self)
     }
 
     fn gen_into_shared_downgrading(self) -> &'s T  {
-        let ptr = GenRef::as_ptr(&self);
-
-        unsafe{
-            ptr.as_ref()
-        }
-    }
-
-    fn gen_into_mut(self, _proof: IsMutable<M>) -> &'s mut T {
-        let mut ptr = GenRef::as_ptr(&self);
-
-        unsafe{
-            ptr.as_mut()
-        }
-    }
-
-    fn gen_into_shared(self, _proof: IsShared<M>) -> &'s T {
         GenRef::gen_into_shared_downgrading(self)
     }
-    fn gen_from_shared(reference: &'s T, _proof: IsShared<M>) -> Self {
-        let ptr = NonNull::from(reference);
+    fn gen_into_mut(self, proof: IsMutable<M>) -> &'s mut T {
+        GenRef::gen_into_mut(self, proof)
+    }
 
-        unsafe {
-            Self::from_ptr_unchecked(ptr)
-        }
+    fn gen_into_shared(self, proof: IsShared<M>) -> &'s T {
+        GenRef::gen_into_shared(self, proof)
     }
 
     fn reborrow(&mut self) -> GenRef<'_, M, T> {
-        unsafe {
-            Self::from_ptr_unchecked(self.ptr)
-        }
+        GenRef::reborrow(self)
     }
 
     fn map<U: ?Sized>(
@@ -332,25 +313,13 @@ impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> 
         f_mut: impl FnOnce(&mut T) -> &mut U, 
         f_shared: impl FnOnce(&T) -> &U
     ) -> GenRef<'s, M, U> {
-        use crate::MutabilityEnum::*;
-
-        match M::mutability() {
-            Mutable(proof) => GenRef::gen_from_mut(
-                f_mut(GenRef::gen_into_mut(self, proof)), 
-                proof
-            ),
-            Shared(proof) => GenRef::gen_from_shared(
-                f_shared(GenRef::gen_into_shared(self, proof)), 
-                proof
-            ),
-
-        }
+        GenRef::map(self, f_mut, f_shared)
     }
 
     fn as_deref(self) -> GenRef<'s, M, T::Target>
         where T: Deref + DerefMut
     {
-        GenRef::map(self, DerefMut::deref_mut, Deref::deref)
+        GenRef::as_deref(self)
     }
 }
 
