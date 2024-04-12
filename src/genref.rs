@@ -148,6 +148,28 @@ This is available in a generic context."
 }
 
 impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
+
+    /// Creates a `GenRef<'s, M, T>` from a pointer with the chosen mutability `M` and lifetime `'s`, without checking.
+    ///
+    /// To create a non-generic `GenRef` from a reference, use the `From` implementation.
+    /// 
+    /// To convert a reference into a `GenRef` in a generic context, use the `gen_from_shared` and `gen_from_mut` methods with a proof or the `gen_from_mut_downgrading` method instead.
+    ///
+    /// # Safety
+    ///
+    /// `GenRef` is a safe reference type. Using this method is equivalent to dereferencing the pointer and creating a reference from it. As such:
+    ///
+    /// - The pointer must be properly aligned.
+    /// - The pointer must point to an initialized instance of `T`.
+    /// - The lifetime `'s` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. 
+    ///     Extra care must be taken to ensure that the correct lifetime is used.
+    /// - Furthermore:
+    ///     - If the mutability is `Immutable`:
+    ///         - The pointer must be valid for reads for lifetime `'s`.
+    ///         - The pointed-to value must not be written to by other pointers and no mutable references to it may exist during `'s`.
+    ///     - If the mutability is `Mutable`:
+    ///         - The pointer must be valid for reads and writes for lifetime `'s`.
+    ///         - The pointed-to value must not be accessed (read or written) by other pointers, and no other references to it may exist during `'s`.
     pub unsafe fn from_ptr_unchecked(ptr: NonNull<T>) -> Self {
         Self{
             _lifetime: PhantomData,
