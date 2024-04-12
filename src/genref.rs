@@ -255,7 +255,14 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 }
 
-pub trait GenRefMethods<'s, M: Mutability, T: ?Sized> {
+
+mod seal {
+    use crate::{GenRef, Mutability};
+
+    pub trait Sealed{}
+    impl<M: Mutability, T: ?Sized> Sealed for GenRef<'_, M, T> {}
+}
+pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
     /// This is a method variant of the equivalent associated function on `GenRef`.
     #[doc = docs_for!(as_ptr)]
     fn as_ptr(&self) -> NonNull<T>;
