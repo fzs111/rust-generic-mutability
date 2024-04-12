@@ -46,7 +46,7 @@ use crate::mutability::{Mutability, Mutable, Shared, IsMutable, IsShared};
 /// 
 /// Then you can take a `GenRef` as an argument.
 /// 
-/// `GenRef` always provides immutable access to te pointed-to value through the `Deref` trait.
+/// `GenRef` always provides immutable access to the pointed-to value through the `Deref` trait.
 /// 
 /// Then, to map the generic reference into one of another type, you can do one of these:
 /// 
