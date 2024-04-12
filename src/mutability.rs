@@ -1,12 +1,20 @@
 use core::marker::PhantomData;
 
-pub trait Mutability: Copy + Sized {
+mod seal{
+    use crate::{Mutable, Shared};
+
+    pub trait Sealed {}
+    impl Sealed for Mutable {}
+    impl Sealed for Shared {}
+}
+
+pub unsafe trait Mutability: Copy + Sized + seal::Sealed {
     fn mutability() -> MutabilityEnum<Self>;
 }
 
 #[derive(Clone, Copy)]
 pub enum Shared {}
-impl Mutability for Shared {
+unsafe impl Mutability for Shared {
     fn mutability() -> MutabilityEnum<Self> {
         let proof = unsafe{
             IsShared::new()
@@ -25,7 +33,7 @@ impl Shared {
 
 #[derive(Clone, Copy)]
 pub enum Mutable {}
-impl Mutability for Mutable {
+unsafe impl Mutability for Mutable {
     fn mutability() -> MutabilityEnum<Self> {
         let proof = unsafe{
             IsMutable::new()

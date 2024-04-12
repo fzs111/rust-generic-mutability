@@ -101,7 +101,14 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     }
 }
 
-pub trait GenRefMethods<'s, M: Mutability, T: ?Sized> {
+
+mod seal {
+    use crate::{GenRef, Mutability};
+
+    pub trait Sealed{}
+    impl<M: Mutability, T: ?Sized> Sealed for GenRef<'_, M, T> {}
+}
+pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
     fn as_ptr(&self) -> NonNull<T>;
 
     fn gen_into_shared_downgrading(self) -> &'s T;
