@@ -288,9 +288,11 @@ mod seal {
 /// This trait allows you to call associated functions of `GenRef` with method syntax.
 /// 
 /// These functions are not methods on `GenRef` to avoid confusion of own methods with methods of `T` (`GenRef` implements `Deref`).
-/// This trait lets you bypass this restriction in cases where it is not confusing.
+/// This trait lets you bypass this restriction in cases where it is not confusing. Use with care.
 /// 
-/// In theory, it's also possible to receive `impl GenRefMethods<'_, M, T>` instead of `GenRef<'_, M, T>` as an argument, which disables the `Deref` impl.
+/// This trait is only implemented for `GenRef<'_, M, T>` and is sealed so no other types can implement it.
+/// 
+/// In theory, it is also possible to receive `impl GenRefMethods<'_, M, T>` instead of `GenRef<'_, M, T>` as an argument, which disables the `Deref` impl, although it is more confusing from the caller side.
 pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
     /// This is a method variant of the equivalent associated function on `GenRef`.
     #[doc = docs_for!(as_ptr)]
