@@ -126,6 +126,8 @@ pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
 
     fn as_deref(self) -> GenRef<'s, M, T::Target>
         where T: Deref + DerefMut;
+
+    fn deref(&self) -> &T;
 }
 impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> {
     fn as_ptr(&self) -> NonNull<T> {
@@ -159,6 +161,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> 
         where T: Deref + DerefMut
     {
         GenRef::as_deref(self)
+    }
+
+    fn deref(&self) -> &T {
+        &**self
     }
 }
 
