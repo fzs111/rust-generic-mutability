@@ -324,6 +324,8 @@ pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
     fn as_deref(self) -> GenRef<'s, M, T::Target>
         where T: Deref + DerefMut;
 
+    /// Dereferences the `GenRef`. Same as `Deref::deref(self)`. 
+    /// This method allows you to call methods on the referenced value explicitly.
     fn deref(&self) -> &T;
 }
 impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> {
