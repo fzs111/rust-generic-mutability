@@ -284,6 +284,13 @@ mod seal {
     pub trait Sealed{}
     impl<M: Mutability, T: ?Sized> Sealed for GenRef<'_, M, T> {}
 }
+
+/// This trait allows you to call associated functions of `GenRef` with method syntax.
+/// 
+/// These functions are not methods on `GenRef` to avoid confusion of own methods with methods of `T` (`GenRef` implements `Deref`).
+/// This trait lets you bypass this restriction in cases where it is not confusing.
+/// 
+/// In theory, it's also possible to receive `impl GenRefMethods<'_, M, T>` instead of `GenRef<'_, M, T>` as an argument, which disables the `Deref` impl.
 pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
     /// This is a method variant of the equivalent associated function on `GenRef`.
     #[doc = docs_for!(as_ptr)]
