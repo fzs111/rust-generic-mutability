@@ -42,6 +42,9 @@ unsafe impl Mutability for Shared {
     }
 }
 impl Shared {
+    /// This method returns a proof for the shared-ness of `Shared`. 
+    /// Note: this method shadows `<Shared as Mutability>::mutability()`, which returns the same proof wrapped in `MutabilityEnum::Shared`.
+    /// If you have access to this method (i.e. in non-generic contexts), you should not need `<Shared as Mutability>::mutability()`.
     pub fn mutability() -> IsShared<Shared> {
         unsafe{
             IsShared::new()
@@ -50,7 +53,7 @@ impl Shared {
 }
 
 
-/// Represents the mutability of a unique reference, `&mut T`.
+/// Represents the mutability of a mutable (unique) reference, `&mut T`.
 /// 
 /// Along with `Shared`, this is one of the two types that can be used as a generic mutability parameter. 
 /// It is an empty type because it is always used as a generic parameter and never as a value.
@@ -66,6 +69,9 @@ unsafe impl Mutability for Mutable {
     }
 }
 impl Mutable {
+    /// This method returns a proof for the mutable-ness of `Mutable`. 
+    /// Note: this method shadows `<Mutable as Mutability>::mutability()`, which returns the same proof wrapped in `MutabilityEnum::Mutable`.
+    /// If you have access to this method (i.e. in non-generic contexts), you should not need `<Mutable as Mutability>::mutability()`.
     pub fn mutability() -> IsMutable<Mutable> {
         unsafe{
             IsMutable::new()
@@ -81,6 +87,7 @@ impl Mutable {
 pub struct IsMutable<M: Mutability>(PhantomData<M>);
 
 impl<M: Mutability> IsMutable<M> {
+    // SAFETY: `M` must be `Mutable`
     pub(crate) unsafe fn new() -> Self {
         IsMutable(PhantomData)
     }
@@ -94,13 +101,24 @@ impl<M: Mutability> IsMutable<M> {
 pub struct IsShared<M: Mutability>(PhantomData<M>);
 
 impl<M: Mutability> IsShared<M> {
+    // SAFETY: `M` must be `Shared`
     pub(crate) unsafe fn new() -> Self {
         IsShared(PhantomData)
     }
 }
 
+/// This enum makes it possible to `match` over a mutability parameter.
+/// Not to be confused with the `Mutability` trait, which is used as a bound for mutability parameters; and `Shared` and `Mutable`, which are values of the mutability parameters.
+/// 
+/// A value of this type can be obtained from the `Mutability::mutability()` method.
+/// 
+/// Each variant contains a proof about the value of mutability parameter `M`.
+/// 
+/// Note that the only valid value of type `MutabilityEnum<Shared>` is `MutabilityEnum::Shared(IsShared)`, and the only value of type `MutabilityEnum<Mutable>` is `MutabilityEnum::Mutable(IsMutable)`
 #[derive(Clone, Copy)]
 pub enum MutabilityEnum<M: Mutability> {
+    /// Contains a proof that `M` is `Mutable`. `MutabilityEnum::Mutable` (this enum variant) is not to be confused with `Mutable` (type implementing `Mutability`).
     Mutable(IsMutable<M>),
+    /// Contains a proof that `M` is `Shared`. `MutabilityEnum::Shared` (this enum variant) is not to be confused with `Shared` (type implementing `Mutability`).
     Shared(IsShared<M>)
 }
