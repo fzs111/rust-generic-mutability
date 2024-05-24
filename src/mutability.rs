@@ -79,7 +79,7 @@ impl Mutable {
     }
 }
 
-/// The existance of a value of this type guarantees that a specific mutability parameter `M` is `Mutable`. 
+/// The existence of a value of this type guarantees that a specific mutability parameter `M` is `Mutable`. 
 /// You can obtain this value by matching over `M::mutability()`.
 /// 
 /// The most notable API that requires this is `GenRef::gen_{into,from}_mut`.
@@ -93,7 +93,7 @@ impl<M: Mutability> IsMutable<M> {
     }
 }
 
-/// The existance of a value of this type guarantees that a specific mutability parameter `M` is `Shared`. 
+/// The existence of a value of this type guarantees that a specific mutability parameter `M` is `Shared`. 
 /// You can obtain this value by matching over `M::mutability()`.
 /// 
 /// The most notable API that requires this is `GenRef::gen_{into,from}_shared`.
