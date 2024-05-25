@@ -16,6 +16,8 @@
 //! ```rust,ignore
 //! fn get_gen<'a, M: Mutability>(GenRef<'a, M, T>, ...) -> GenRef<'a, M, U>
 //! ```
+//! 
+//! The main items of this crate are the `GenRef` struct, which represents a safe reference (like `&` and `&mut`) that is generic over mutability; and the `Mutability` trait, which is used as a bound on *generic mutability parameters*.
 
 mod mutability;
 mod genref;
