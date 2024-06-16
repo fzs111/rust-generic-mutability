@@ -161,8 +161,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     ///
     /// - The pointer must be properly aligned.
     /// - The pointer must point to an initialized instance of `T`.
-    /// - The lifetime `'s` is arbitrarily chosen and doesn't reflect the actual lifetime of the data. 
-    ///     Extra care must be taken to ensure that the correct lifetime is used.
+    /// - The lifetime `'s` and mutability `M` are arbitrarily chosen and do not necessarily reflect the actual lifetime and mutability of the data. 
+    ///     Extra care must be taken to ensure that the correct lifetime and mutability parameters are used.
     /// - Furthermore:
     ///     - If the mutability is `Immutable`:
     ///         - The pointer must be valid for reads for lifetime `'s`.
