@@ -95,10 +95,14 @@ macro_rules! docs_for {
     (as_ptr) => {
          "Casts the reference into a `NonNull` pointer.
 
-The returned pointer is guaranteed to be valid for reads for `'s`, and also for writes if `M` is `Mutable`.
+# Safety
 
 The `GenRef` must not be used while the pointer is active. 
-The exact semantics of this depends on the memory model adopted by Rust." 
+The exact semantics of this depend on the memory model adopted by Rust.
+
+# Guarantees
+
+The returned pointer is guaranteed to be valid for reads for `'s`, and also for writes if `M` is `Mutable`."
     };
     (gen_into_shared_downgrading) => {
          "Converts a generic `GenRef<'_, M, T>` into `&T`, downgrading the reference if `M` is `Mutable`.
@@ -191,6 +195,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         let ptr = NonNull::from(reference);
 
         unsafe {
+            // SAFETY: `ptr` is derived from a mutable reference, so points to a valid `T` and is valid and unaliased for `'s`.
+            // The correct lifetime is enforced by the function signature.
             Self::from_ptr_unchecked(ptr)
         }
     }
@@ -200,6 +206,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         let ptr = GenRef::as_ptr(&genref);
 
         unsafe{
+            // SAFETY: `GenRef::as_ptr` guarantees that `ptr` points to a valid `T` and is valid for reads for `'s`.
             ptr.as_ref()
         }
     }
@@ -209,6 +216,9 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         let mut ptr = GenRef::as_ptr(&genref);
 
         unsafe{
+            // SAFETY: For a value of `IsMutable<M>` to exist, `M` must be `Mutable`. 
+            // `GenRef::as_ptr` guarantees that `ptr` points to a valid `T` and (given that `M` is `Mutable`) is valid for reads and writes for `'s`. 
+            // This function takes ownership of `GenRef`, so `ptr` can not be aliased.
             ptr.as_mut()
         }
     }
@@ -237,6 +247,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         let ptr = NonNull::from(reference);
 
         unsafe {
+            // SAFETY: For a value of `IsShared<M>` to exist, `M` must be `Shared`. `ptr` is derived from a shared reference, so it is valid for reads for `'s`.
+            // The correct lifetime is enforced by the function signature.
             Self::from_ptr_unchecked(ptr)
         }
     }
@@ -244,7 +256,10 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     #[doc = docs_for!(reborrow)]
     pub fn reborrow(genref: &mut Self) -> GenRef<'_, M, T> {
         unsafe {
-            Self::from_ptr_unchecked(genref.ptr)
+            // SAFETY: `GenRef::as_ptr` guarantees that `ptr` points to a valid `T` and is valid for reads for `'_`. If `M` is `Mutable`, it also guarantees validity for writes.
+            // The `GenRef` received as argument is not used after calling `as_ptr` for the lifetime `'_`, and the pointer returned by `as_ptr` can not be aliased, both guaranteed by the exclusive reference received as argument.
+            // The correct lifetime and mutability parameters are enforced by the function signature.
+            GenRef::from_ptr_unchecked(GenRef::as_ptr(genref))
         }
     }
 
@@ -416,7 +431,9 @@ impl<M: Mutability, T: ?Sized> Deref for GenRef<'_, M, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         unsafe{
-            self.ptr.as_ref()
+            // SAFETY: `GenRef::as_ptr` guarantees that `ptr` points to a valid `T` and is valid for reads for `'s`.
+            // The correct lifetime is enforced by the function signature.
+            GenRef::as_ptr(self).as_ref()
         }
     }
 }

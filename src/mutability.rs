@@ -34,9 +34,9 @@ pub unsafe trait Mutability: Copy + Sized + seal::Sealed {
 pub enum Shared {}
 unsafe impl Mutability for Shared {
     fn mutability() -> MutabilityEnum<Self> {
-        let proof = unsafe{
-            IsShared::new()
-        };
+        // This is not a recursive call, but a call to the inherent method.
+        #[deny(unconditional_recursion)]
+        let proof = Shared::mutability();
 
         MutabilityEnum::Shared(proof)
     }
@@ -47,6 +47,7 @@ impl Shared {
     /// If you have access to this method (i.e. in non-generic contexts), you should not need `<Shared as Mutability>::mutability()`.
     pub fn mutability() -> IsShared<Shared> {
         unsafe{
+            // SAFETY: `M` is `Shared`
             IsShared::new()
         }
     }
@@ -61,9 +62,9 @@ impl Shared {
 pub enum Mutable {}
 unsafe impl Mutability for Mutable {
     fn mutability() -> MutabilityEnum<Self> {
-        let proof = unsafe{
-            IsMutable::new()
-        };
+        // This is not a recursive call, but a call to the inherent method.
+        #[deny(unconditional_recursion)]
+        let proof = Mutable::mutability();
 
         MutabilityEnum::Mutable(proof)
     }
@@ -74,6 +75,7 @@ impl Mutable {
     /// If you have access to this method (i.e. in non-generic contexts), you should not need `<Mutable as Mutability>::mutability()`.
     pub fn mutability() -> IsMutable<Mutable> {
         unsafe{
+            // SAFETY: `M` is `Mutable`
             IsMutable::new()
         }
     }
