@@ -474,8 +474,9 @@ impl<M: Mutability, T: ?Sized> fmt::Pointer for GenRef<'_, M, T> {
 
 /// This implementation requires `T: Sync` even when `M` is `Mutable`.
 /// With specialisation, this requirement could be lifted.
+// SAFETY: `GenRef` behaves like a reference, and both `&T` and `&mut T` implement `Send` if `T` is `Send` and `Sync`
 unsafe impl<M: Mutability, T: ?Sized> Send for GenRef<'_, M, T> where T: Send + Sync {}
-
+// SAFETY: `GenRef` behaves like a reference, and both `&T` and `&mut T` implement `Sync` if `T` is `Sync`
 unsafe impl<M: Mutability, T: ?Sized> Sync for GenRef<'_, M, T> where T: Sync {}
 
 impl<M: Mutability, T: ?Sized> Hash for GenRef<'_, M, T>

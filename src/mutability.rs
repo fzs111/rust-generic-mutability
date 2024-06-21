@@ -16,6 +16,8 @@ mod seal {
 ///
 /// Note that while mutability parameters are implemented as type parameters, they represent an entirely different kind of generic parameter.
 /// For this reason, the `M: Mutability` bound should be applied even in struct definitions where bounds are generally discouraged.
+#[allow(clippy::missing_safety_doc)]
+// SAFETY: this trait must only be implemented for `Shared` and `Mutable`. `Shared::mutability()` must return `MutabilityEnum::Shared(IsShared<Shared>)` and `Mutable::mutability()` must return `MutabilityEnum::Mutable(IsMutable<Mutable>)`.
 pub unsafe trait Mutability: Copy + Sized + seal::Sealed {
     /// The result of this method lets you match over the mutability values to obtain a proof, which can be used to access features that are only available for one mutability.
     ///
@@ -31,6 +33,8 @@ pub unsafe trait Mutability: Copy + Sized + seal::Sealed {
 /// Just as with `&T`, interior mutability types may change while behind a reference of `Shared` mutability.
 #[derive(Clone, Copy)]
 pub enum Shared {}
+
+// SAFETY: `mutability()` does return `MutabilityEnum::Shared(IsShared<Shared>)`
 unsafe impl Mutability for Shared {
     fn mutability() -> MutabilityEnum<Self> {
         // This is not a recursive call, but a call to the inherent method.
@@ -56,6 +60,8 @@ impl Shared {
 /// It is an empty type because it is always used as a generic parameter and never as a value.
 #[derive(Clone, Copy)]
 pub enum Mutable {}
+
+// SAFETY: `mutability()` does return `MutabilityEnum::Mutable(IsMutable<Mutable>)`
 unsafe impl Mutability for Mutable {
     fn mutability() -> MutabilityEnum<Self> {
         // This is not a recursive call, but a call to the inherent method.
