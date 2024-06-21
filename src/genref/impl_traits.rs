@@ -3,7 +3,11 @@ use core::fmt;
 use core::hash::Hash;
 use core::iter::{DoubleEndedIterator, FusedIterator, Iterator};
 
-use crate::{GenRef, Mutability, Mutable};
+#[cfg(any(feature = "std", doc))]
+extern crate std;
+
+#[allow(unused_imports)]
+use crate::{GenRef, Mutability, Mutable, Shared};
 
 impl<M: Mutability, T: ?Sized> Hash for GenRef<'_, M, T>
 where
@@ -109,6 +113,14 @@ where
     fn write_str(&mut self, s: &str) -> fmt::Result {
         T::write_str(&mut **self, s)
     }
+
+    fn write_char(&mut self, c: char) -> fmt::Result {
+        T::write_char(&mut **self, c)
+    }
+
+    fn write_fmt(&mut self, args: fmt::Arguments<'_>) -> fmt::Result {
+        T::write_fmt(&mut **self, args)
+    }
 }
 
 /// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
@@ -119,6 +131,14 @@ where
     type Item = T::Item;
     fn next(&mut self) -> Option<Self::Item> {
         T::next(&mut **self)
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        T::nth(&mut **self, n)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        T::size_hint(&**self)
     }
 }
 

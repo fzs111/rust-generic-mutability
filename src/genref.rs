@@ -4,9 +4,6 @@ use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
 
-#[cfg(any(feature = "std", doc))]
-extern crate std;
-
 use crate::mutability::{IsMutable, IsShared, Mutability, Mutable, Shared};
 
 mod impl_traits;
