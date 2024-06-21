@@ -343,7 +343,7 @@ pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
 }
 impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> {
     fn as_ptr(&self) -> NonNull<T> {
-        GenRef::as_ptr(&self)
+        GenRef::as_ptr(self)
     }
 
     fn gen_into_shared_downgrading(self) -> &'s T {
@@ -377,7 +377,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> 
     }
 
     fn deref(&self) -> &T {
-        &**self
+        self
     }
 }
 
@@ -456,13 +456,13 @@ impl<T: ?Sized> Copy for GenRef<'_, Shared, T> {}
 
 impl<M: Mutability, T: ?Sized> Borrow<T> for GenRef<'_, M, T> {
     fn borrow(&self) -> &T {
-        &**self
+        self
     }
 }
 /// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
 impl<T: ?Sized> BorrowMut<T> for GenRef<'_, Mutable, T> {
     fn borrow_mut(&mut self) -> &mut T {
-        &mut **self
+        self
     }
 }
 

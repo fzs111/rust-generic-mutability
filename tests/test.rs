@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![allow(clippy::disallowed_names)]
 
 use generic_mutability::*;
 
