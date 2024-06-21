@@ -14,7 +14,7 @@ fn gen_get<M: Mutability>(
 ) -> Option<GenRef<'_, M, i32>> {
     gen_mut! {M => {
         let ref_vec = from_gen!(gen_vec);
-        switch_mut_shared![<[_]>::get_mut, <[_]>::get](ref_vec, idx).map(into_gen!())
+        switch_shared_mut![<[_]>::get, <[_]>::get_mut](ref_vec, idx).map(into_gen!())
     }}
 }
 

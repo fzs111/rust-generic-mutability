@@ -2,30 +2,33 @@
 /// It has the following syntax:
 ///
 /// ```rust, ignore
-/// gen_mut!{ M => {
+/// gen_mut!{ $M => {
 ///     /* code */
 /// }}
 /// ```
-/// where `M` is the name of the generic parameter you want to unwrap.
+/// where `$M` is the name of the generic parameter you want to unwrap.
 /// The code inside has access to three macros, which allow it to emit different code depending on the value of `M`:
 ///
-/// - `from_gen!(genref)` / `from_gen!()`
+/// - `from_gen!($genref)` / `from_gen!()`
 ///
-///     Calls `GenRef::gen_into_shared` and `GenRef::gen_into_mut` on the `genref` passed as an argument.
+///     Calls `GenRef::gen_into_shared` and `GenRef::gen_into_mut` on the `$genref` passed as an argument.
 ///     The type of return value is different in the shared vs the mutable case, so it is not possible to move the return value outside of the macro call (attempting to do so would run into a type checker error on trying to assign `&mut T` to `&T` or vice versa).
 ///     The return value can be converted back into a `GenRef` using the `into_gen!` macro.
 ///     If no arguments are passed, it returns a closure `Fn(GenRef<'_, M, T>) -> &T` / `Fn(GenRef<'_, M, T>) -> &mut T`.
 ///
-/// - `into_mut!(reference)` / `into_mut!(&gen place)` / `into_mut!()`
+/// - `into_mut!($reference)` / `into_mut!(&gen $place)` / `into_mut!()`
 ///
 ///     Calls `GenRef::gen_from_shared` and `GenRef::gen_from_mut` on the reference passed as an argument, and returns the resulting `GenRef`.
 ///     The type of the input is different in the shared vs the mutable case, so it is not possible to call this with a reference that was not created via `from_gen!` or `switch_mut_shared!`.
-///     To allow accessing fields, you can use the `into_mut!(&gen place)` syntax, which references the `place` expression with the appropriate kind of reference.
+///     To allow accessing fields, you can use the `into_mut!(&gen $place)` syntax, which references the `$place` expression with the appropriate kind of reference.
 ///     If no arguments are passed, it returns a closure `Fn(&T) -> GenRef<'_, M, T>` / `Fn(&mut T) -> GenRef<'_, M, T>`.
 ///
-/// - `switch_mut_shared!(mutable_expr, shared_expr)`
+/// - `switch_shared_mut!($shared_expr, $mutable_expr)` / `switch_shared_mut!({ $shared_tts } { $mutable_tts })`
 ///
-///     Expands into `mutable_expr` in the mutable case and into `shared_expr` in the shared case.
+///     Expands to `shared_expr` in the shared case and `mutable_expr` in the mutable case.
+///     The `switch_shared_mut!({ $shared_tts } { $mutable_tts })` syntax allows you to expand to arbitrary token trees, not just expressions.
+///     This requires you to wrap them in brackets, which will not appear in the expansion.
+///     Also note that in this syntax there is no comma separating the two cases.
 
 #[macro_export]
 macro_rules! gen_mut {
@@ -52,8 +55,14 @@ macro_rules! gen_mut {
                     };
                 }
                 #[allow(unused_macros)]
-                macro_rules! switch_mut_shared {
-                    ($mutable:expr, $shared:expr) => {
+                macro_rules! switch_shared_mut {
+                    ($shared:tt $mutable:tt) => {
+                        // For syntactic reasons, it is impossible to define a macro with a repeating capture group inside another macro.
+                        // (The definition would be interpreted as a repeating expansion group of the outer macro.)
+                        // So, processing is outsourced to a macro defined elsewhere.
+                        $crate::__unwrap($shared);
+                    };
+                    ($shared:expr, $mutable:expr) => {
                         $shared
                     };
                 }
@@ -80,8 +89,14 @@ macro_rules! gen_mut {
                     };
                 }
                 #[allow(unused_macros)]
-                macro_rules! switch_mut_shared {
-                    ($mutable:expr, $shared:expr) => {
+                macro_rules! switch_shared_mut {
+                    ($shared:tt $mutable:tt) => {
+                        // For syntactic reasons, it is impossible to define a macro with a repeating capture group inside another macro.
+                        // (The definition would be interpreted as a repeating expansion group of the outer macro.)
+                        // So, processing is outsourced to a macro defined elsewhere.
+                        $crate::__unwrap!($mutable)
+                    };
+                    ($shared:expr, $mutable:expr) => {
                         $mutable
                     };
                 }
@@ -89,6 +104,14 @@ macro_rules! gen_mut {
             }
         }
     };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __unwrap{
+    ( { $($items:tt)* } ) => {
+        $($items)*
+    }
 }
 
 /// Maps a `GenRef` over field access and indexing.

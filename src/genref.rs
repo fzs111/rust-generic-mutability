@@ -33,7 +33,7 @@ use crate::mutability::{IsMutable, IsShared, Mutability, Mutable, Shared};
 /// #     C: Index<I> + IndexMut<I>,
 /// # {
 /// #     gen_mut! {M => {
-/// #         into_gen!(switch_mut_shared![C::index_mut, C::index](from_gen!(gen_collection), index))
+/// #         into_gen!(switch_shared_mut![C::index, C::index_mut](from_gen!(gen_collection), index))
 /// #     }}
 /// # }
 /// let v = vec![1, 2, 3];
