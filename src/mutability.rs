@@ -45,10 +45,8 @@ impl Shared {
     /// Note: this method shadows `<Shared as Mutability>::mutability()`, which returns the same proof wrapped in `MutabilityEnum::Shared`.
     /// If you have access to this method (i.e. in non-generic contexts), you should not need `<Shared as Mutability>::mutability()`.
     pub fn mutability() -> IsShared<Shared> {
-        unsafe {
-            // SAFETY: `M` is `Shared`
-            IsShared::new()
-        }
+        // SAFETY: `M` is `Shared`
+        unsafe { IsShared::new() }
     }
 }
 
@@ -72,10 +70,8 @@ impl Mutable {
     /// Note: this method shadows `<Mutable as Mutability>::mutability()`, which returns the same proof wrapped in `MutabilityEnum::Mutable`.
     /// If you have access to this method (i.e. in non-generic contexts), you should not need `<Mutable as Mutability>::mutability()`.
     pub fn mutability() -> IsMutable<Mutable> {
-        unsafe {
-            // SAFETY: `M` is `Mutable`
-            IsMutable::new()
-        }
+        // SAFETY: `M` is `Mutable`
+        unsafe { IsMutable::new() }
     }
 }
 
