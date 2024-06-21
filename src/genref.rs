@@ -61,7 +61,7 @@ use crate::mutability::{IsMutable, IsShared, Mutability, Mutable, Shared};
 ///
 /// - If the API you are calling has generic mutability accessors, you can pass the `GenRef` directly to them.
 ///     Unlike normal references, which are automatically reborrowed, you may need to use `GenRef::reborrow` to perform a reborrow manually.
-///     You can also call `as_deref` to perform a dereference.
+///     You can also call `map_deref` to perform a dereference.
 ///
 /// - If the API you're calling *does not* have generic mutability, you can use one of the following ways to unwrap and reconstruct the `GenRef`:
 ///     - `map`
@@ -154,7 +154,7 @@ Using this function is usually sufficient.
 For mapping over field access, you can use the `field!` macro instead.
 If you need more flexibility, you can use the `gen_mut!` macro or `match`ing over `M::mutability()`."
     };
-    (as_deref) => {
+    (map_deref) => {
          "Generically dereferences the value contained in the `GenRef`.
 This is available in a generic context."
     };
@@ -279,8 +279,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    #[doc = docs_for!(as_deref)]
-    pub fn as_deref(genref: Self) -> GenRef<'s, M, T::Target>
+    #[doc = docs_for!(map_deref)]
+    pub fn map_deref(genref: Self) -> GenRef<'s, M, T::Target>
     where
         T: Deref + DerefMut,
     {
@@ -332,8 +332,8 @@ pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
     ) -> GenRef<'s, M, U>;
 
     /// This is a method variant of the equivalent associated function on `GenRef`.
-    #[doc = docs_for!(as_deref)]
-    fn as_deref(self) -> GenRef<'s, M, T::Target>
+    #[doc = docs_for!(map_deref)]
+    fn map_deref(self) -> GenRef<'s, M, T::Target>
     where
         T: Deref + DerefMut;
 
@@ -369,11 +369,11 @@ impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> 
         GenRef::map(self, f_mut, f_shared)
     }
 
-    fn as_deref(self) -> GenRef<'s, M, T::Target>
+    fn map_deref(self) -> GenRef<'s, M, T::Target>
     where
         T: Deref + DerefMut,
     {
-        GenRef::as_deref(self)
+        GenRef::map_deref(self)
     }
 
     fn deref(&self) -> &T {
