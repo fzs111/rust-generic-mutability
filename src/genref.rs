@@ -264,8 +264,8 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     #[doc = docs_for!(map)]
     pub fn map<U: ?Sized>(
         genref: Self,
-        f_mut: impl FnOnce(&mut T) -> &mut U,
         f_shared: impl FnOnce(&T) -> &U,
+        f_mut: impl FnOnce(&mut T) -> &mut U,
     ) -> GenRef<'s, M, U> {
         use crate::MutabilityEnum::*;
 
@@ -284,7 +284,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     where
         T: Deref + DerefMut,
     {
-        GenRef::map(genref, DerefMut::deref_mut, Deref::deref)
+        GenRef::map(genref, Deref::deref, DerefMut::deref_mut)
     }
 }
 
@@ -366,7 +366,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> 
         f_mut: impl FnOnce(&mut T) -> &mut U,
         f_shared: impl FnOnce(&T) -> &U,
     ) -> GenRef<'s, M, U> {
-        GenRef::map(self, f_mut, f_shared)
+        GenRef::map(self, f_shared, f_mut)
     }
 
     fn map_deref(self) -> GenRef<'s, M, T::Target>
