@@ -24,7 +24,7 @@
 ///     If no arguments are passed, it returns a closure `Fn(&T) -> GenRef<'_, M, T>` / `Fn(&mut T) -> GenRef<'_, M, T>`.
 ///
 /// - `switch_mut_shared!(mutable_expr, shared_expr)`
-///     
+///
 ///     Expands into `mutable_expr` in the mutable case and into `shared_expr` in the shared case.
 
 #[macro_export]
@@ -91,7 +91,7 @@ macro_rules! gen_mut {
     };
 }
 
-/// Maps a `GenRef` over field access.
+/// Maps a `GenRef` over field access and indexing.
 ///
 /// Returns a `GenRef` to the field. Accessing nested fields is supported.
 ///
@@ -101,13 +101,13 @@ macro_rules! gen_mut {
 ///
 /// ```rust, ignore
 /// field!(&gen genref.field)
-/// field!(&gen genref.field1.2.field3)
+/// field!(&gen genref.field1.2.field3[4])
 /// field!(&gen (obtain_genref()).field)
 /// field!(&gen (container.genref).field)
 /// ```
 #[macro_export]
 macro_rules! field {
-    (&gen $genref:tt $(. $field:tt)+) => {
-        $crate::GenRef::map($genref, |r| &mut r $(. $field)+, |r| & r $(. $field)+)
+    (&gen $genref:tt $($field:tt)+) => {
+        $crate::GenRef::map($genref, |r| &mut r $($field)+, |r| & r $($field)+)
     };
 }

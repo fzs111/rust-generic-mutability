@@ -26,7 +26,16 @@ use crate::mutability::{IsMutable, IsShared, Mutability, Mutable, Shared};
 /// For example:
 ///
 /// ```
-/// # use generic_mutability::{ GenRef, Mutability, Shared };
+/// # use core::ops::{Index, IndexMut};
+/// # use generic_mutability::{gen_mut, GenRef, Mutability, Shared};
+/// # fn gen_index<M: Mutability, I, C>(gen_collection: GenRef<'_, M, C>, index: I) -> GenRef<'_, M, C::Output>
+/// # where
+/// #     C: Index<I> + IndexMut<I>,
+/// # {
+/// #     gen_mut! {M => {
+/// #         into_gen!(switch_mut_shared![C::index_mut, C::index](from_gen!(gen_collection), index))
+/// #     }}
+/// # }
 /// let v = vec![1, 2, 3];
 ///
 /// let gen_r: GenRef<'_, Shared, i32> = gen_index(GenRef::from(&v), 1);
