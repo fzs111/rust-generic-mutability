@@ -22,5 +22,6 @@ mod genref;
 mod macros;
 mod mutability;
 
-pub use genref::{GenRef, GenRefMethods};
+pub use genref::genref_methods::GenRefMethods;
+pub use genref::GenRef;
 pub use mutability::{IsMutable, IsShared, Mutability, MutabilityEnum, Mutable, Shared};
