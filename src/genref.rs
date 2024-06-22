@@ -258,11 +258,13 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
     ///
     /// If you want to force the conversion even if `M` is `Shared`, you can use the `gen_from_mut_downgrading` function.
     pub fn gen_from_mut(reference: &'s mut T, _proof: IsMutable<M>) -> Self {
+        // `gen_from_mut_downgrading` is semantically different, but when called with `M = Mutable` they perform the same operation.
         GenRef::gen_from_mut_downgrading(reference)
     }
 
     #[doc = docs_for!(gen_into_shared)]
     pub fn gen_into_shared(genref: Self, _proof: IsShared<M>) -> &'s T {
+        // `gen_into_shared_downgrading` is semantically different, but when called with `M = Shared` they perform the same operation.
         GenRef::gen_into_shared_downgrading(genref)
     }
 
