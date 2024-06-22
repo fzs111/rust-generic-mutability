@@ -87,6 +87,36 @@ mod impl_traits;
 ///     }
 /// }
 /// ```
+///
+/// In most cases, the mutable and shared cases share most of the code. When that is the case, it is often possible to use the `gen_mut!` macro, which expands to the same as above:
+///
+/// ```
+/// # use generic_mutability::{ GenRef, Mutability, gen_mut };
+/// fn gen_index<M: Mutability, T>(gen_slice: GenRef<'_, M, [T]>, index: usize) -> GenRef<'_, M, T> {
+///     gen_mut!(M => {
+///         let ref_slice = from_gen!(gen_slice);
+///         into_gen!(&gen ref_slice[index])
+///     })
+/// }
+/// ```
+///
+/// When performing a one-to-one mapping with two separate functions (often when calling into an API), the `GenRef::map` can come handy:
+///
+/// ```
+/// # use generic_mutability::{ GenRef, Mutability };
+/// fn gen_index<M: Mutability, T>(gen_slice: GenRef<'_, M, [T]>, index: usize) -> GenRef<'_, M, T> {
+///     GenRef::map(gen_slice, |r| &r[index], |r| &mut r[index])
+/// }
+/// ```
+///
+/// Finally, when accessing fields or performing indexing, the `field!` macro can be helpful as well:
+///
+/// ```
+/// # use generic_mutability::{ GenRef, Mutability, field };
+/// fn gen_index<M: Mutability, T>(gen_slice: GenRef<'_, M, [T]>, index: usize) -> GenRef<'_, M, T> {
+///     field!(&gen gen_slice[index])
+/// }
+/// ```
 #[repr(transparent)]
 pub struct GenRef<'s, M: Mutability, T: ?Sized> {
     // This could contain an `ErasedMutRef` instead of `_lifetime` and `ptr`,
