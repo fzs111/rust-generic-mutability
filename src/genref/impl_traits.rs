@@ -92,7 +92,7 @@ where
 }
 
 #[cfg(any(feature = "std", doc))]
-/// This is only implemented for `GenRef<'_, Shared, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Shared`, and is not available for references with generic mutablity.
 ///
 /// This is only available with the feature flag `std`.
 impl<T: ?Sized> std::net::ToSocketAddrs for GenRef<'_, Shared, T>
@@ -105,7 +105,7 @@ where
     }
 }
 
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 impl<T: ?Sized> fmt::Write for GenRef<'_, Mutable, T>
 where
     T: fmt::Write,
@@ -123,7 +123,7 @@ where
     }
 }
 
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 impl<T: ?Sized> Iterator for GenRef<'_, Mutable, T>
 where
     T: Iterator,
@@ -142,7 +142,7 @@ where
     }
 }
 
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 impl<T: ?Sized> DoubleEndedIterator for GenRef<'_, Mutable, T>
 where
     T: DoubleEndedIterator,
@@ -152,7 +152,7 @@ where
     }
 }
 
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 impl<T: ?Sized> ExactSizeIterator for GenRef<'_, Mutable, T>
 where
     T: ExactSizeIterator,
@@ -162,11 +162,11 @@ where
     }
 }
 
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 impl<T: ?Sized> FusedIterator for GenRef<'_, Mutable, T> where T: FusedIterator {}
 
 #[cfg(any(feature = "std", doc))]
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 ///
 /// This is only available with the feature flag `std`.
 impl<T: ?Sized> std::io::Write for GenRef<'_, Mutable, T>
@@ -182,7 +182,7 @@ where
 }
 
 #[cfg(any(feature = "std", doc))]
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 ///
 /// This is only available with the feature flag `std`.
 impl<T: ?Sized> std::io::Read for GenRef<'_, Mutable, T>
@@ -195,7 +195,7 @@ where
 }
 
 #[cfg(any(feature = "std", doc))]
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 ///
 /// This is only available with the feature flag `std`.
 impl<T: ?Sized> std::io::Seek for GenRef<'_, Mutable, T>
@@ -208,7 +208,7 @@ where
 }
 
 #[cfg(any(feature = "std", doc))]
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 ///
 /// This is only available with the feature flag `std`.
 impl<T: ?Sized> std::io::BufRead for GenRef<'_, Mutable, T>

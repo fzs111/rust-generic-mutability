@@ -389,7 +389,7 @@ impl<M: Mutability, T: ?Sized> Deref for GenRef<'_, M, T> {
     }
 }
 
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 ///
 /// To get mutable access to the value, call `reborrow` followed by `gen_into_mut` (this requires proving that `M` is mutable).
 impl<T: ?Sized> DerefMut for GenRef<'_, Mutable, T> {
@@ -399,7 +399,7 @@ impl<T: ?Sized> DerefMut for GenRef<'_, Mutable, T> {
     }
 }
 
-/// This is only implemented for `GenRef<'_, Shared, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Shared`, and is not available for references with generic mutablity.
 impl<T: ?Sized> Clone for GenRef<'_, Shared, T> {
     /// Copies the reference. This does not call `clone` on the pointed-to value.
     #[inline(always)]
@@ -407,7 +407,7 @@ impl<T: ?Sized> Clone for GenRef<'_, Shared, T> {
         *self
     }
 }
-/// This is only implemented for `GenRef<'_, Shared, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Shared`, and is not available for references with generic mutablity.
 impl<T: ?Sized> Copy for GenRef<'_, Shared, T> {}
 
 impl<M: Mutability, T: ?Sized> Borrow<T> for GenRef<'_, M, T> {
@@ -416,7 +416,7 @@ impl<M: Mutability, T: ?Sized> Borrow<T> for GenRef<'_, M, T> {
         self
     }
 }
-/// This is only implemented for `GenRef<'_, Mutable, T>`, and is not available in a generic context.
+/// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 impl<T: ?Sized> BorrowMut<T> for GenRef<'_, Mutable, T> {
     #[inline(always)]
     fn borrow_mut(&mut self) -> &mut T {
