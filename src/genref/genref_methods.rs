@@ -57,31 +57,31 @@ pub trait GenRefMethods<'s, M: Mutability, T: ?Sized>: seal::Sealed {
     fn deref(&self) -> &T;
 }
 impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> {
-    #[inline(always)]
+    #[inline]
     fn as_ptr(&self) -> NonNull<T> {
         GenRef::as_ptr(self)
     }
 
-    #[inline(always)]
+    #[inline]
     fn gen_into_shared_downgrading(self) -> &'s T {
         GenRef::gen_into_shared_downgrading(self)
     }
-    #[inline(always)]
+    #[inline]
     fn gen_into_mut(self, proof: IsMutable<M>) -> &'s mut T {
         GenRef::gen_into_mut(self, proof)
     }
 
-    #[inline(always)]
+    #[inline]
     fn gen_into_shared(self, proof: IsShared<M>) -> &'s T {
         GenRef::gen_into_shared(self, proof)
     }
 
-    #[inline(always)]
+    #[inline]
     fn reborrow(&mut self) -> GenRef<'_, M, T> {
         GenRef::reborrow(self)
     }
 
-    #[inline(always)]
+    #[inline]
     fn map<U: ?Sized>(
         self,
         f_mut: impl FnOnce(&mut T) -> &mut U,
@@ -90,7 +90,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> 
         GenRef::map(self, f_shared, f_mut)
     }
 
-    #[inline(always)]
+    #[inline]
     fn map_deref(self) -> GenRef<'s, M, T::Target>
     where
         T: Deref + DerefMut,
@@ -98,7 +98,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRefMethods<'s, M, T> for GenRef<'s, M, T> 
         GenRef::map_deref(self)
     }
 
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &T {
         self
     }

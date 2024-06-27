@@ -190,7 +190,7 @@ This is available in a generic context."
 pub(self) use docs_for;
 
 impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
-    #[inline(always)]
+    #[inline]
     /// Creates a `GenRef<'s, M, T>` from a pointer with the chosen mutability `M` and lifetime `'s`, without checking.
     ///
     /// To create a non-generic `GenRef` from a reference, use the `From` implementation.
@@ -220,13 +220,13 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     #[doc = docs_for!(as_ptr)]
     pub fn as_ptr(genref: &Self) -> NonNull<T> {
         genref.ptr
     }
 
-    #[inline(always)]
+    #[inline]
     /// Converts a `&mut T` into a generic `GenRef<'_, M, T>`, downgrading the reference if `M` is `Shared`.
     ///
     /// If `M` is `Mutable` it behaves exactly the same way as `gen_from_mut` without requiring a proof for mutability.
@@ -239,7 +239,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         unsafe { Self::from_ptr_unchecked(ptr) }
     }
 
-    #[inline(always)]
+    #[inline]
     #[doc = docs_for!(gen_into_shared_downgrading)]
     pub fn gen_into_shared_downgrading(genref: Self) -> &'s T {
         let ptr = GenRef::as_ptr(&genref);
@@ -248,7 +248,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         unsafe { ptr.as_ref() }
     }
 
-    #[inline(always)]
+    #[inline]
     #[doc = docs_for!(gen_into_mut)]
     pub fn gen_into_mut(genref: Self, _proof: IsMutable<M>) -> &'s mut T {
         let mut ptr = GenRef::as_ptr(&genref);
@@ -258,7 +258,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         // This function takes ownership of `GenRef`, so `ptr` can not be aliased.
         unsafe { ptr.as_mut() }
     }
-    #[inline(always)]
+    #[inline]
     /// Converts a `&mut T` into a generic `GenRef<'_, M, T>`.
     /// This is available in a generic context.
     ///
@@ -271,14 +271,14 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         GenRef::gen_from_mut_downgrading(reference)
     }
 
-    #[inline(always)]
+    #[inline]
     #[doc = docs_for!(gen_into_shared)]
     pub fn gen_into_shared(genref: Self, _proof: IsShared<M>) -> &'s T {
         // `gen_into_shared_downgrading` is semantically different, but when called with `M = Shared` they perform the same operation.
         GenRef::gen_into_shared_downgrading(genref)
     }
 
-    #[inline(always)]
+    #[inline]
     /// Converts a `&T` into a generic `GenRef<'_, M, T>`.
     /// This is available in a generic context.
     ///
@@ -292,7 +292,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         unsafe { Self::from_ptr_unchecked(ptr) }
     }
 
-    #[inline(always)]
+    #[inline]
     #[doc = docs_for!(reborrow)]
     pub fn reborrow(genref: &mut Self) -> GenRef<'_, M, T> {
         // SAFETY: `GenRef::as_ptr` guarantees that `ptr` points to a valid `T` and is valid for reads for `'_`. If `M` is `Mutable`, it also guarantees validity for writes.
@@ -301,7 +301,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         unsafe { GenRef::from_ptr_unchecked(GenRef::as_ptr(genref)) }
     }
 
-    #[inline(always)]
+    #[inline]
     #[doc = docs_for!(map)]
     pub fn map<U: ?Sized>(
         genref: Self,
@@ -320,7 +320,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     #[doc = docs_for!(map_deref)]
     pub fn map_deref(genref: Self) -> GenRef<'s, M, T::Target>
     where
@@ -331,7 +331,7 @@ impl<'s, M: Mutability, T: ?Sized> GenRef<'s, M, T> {
 }
 
 impl<'s, T: ?Sized> GenRef<'s, Shared, T> {
-    #[inline(always)]
+    #[inline]
     /// Converts a `GenRef<'_, Shared, T>` into `&T` in a non-generic context.
     ///
     /// This is used to unwrap the reference in end-user code.
@@ -342,7 +342,7 @@ impl<'s, T: ?Sized> GenRef<'s, Shared, T> {
     }
 }
 impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
-    #[inline(always)]
+    #[inline]
     /// Converts a `GenRef<'_, Mutable T>` into `&mut T` in a non-generic context.
     ///
     /// This is used to unwrap the reference in end-user code.
@@ -359,7 +359,7 @@ impl<'s, T: ?Sized> GenRef<'s, Mutable, T> {
 ///
 /// To create a generic `GenRef<'_, M, T>`, use `gen_from_shared`.
 impl<'s, T: ?Sized> From<&'s T> for GenRef<'s, Shared, T> {
-    #[inline(always)]
+    #[inline]
     fn from(reference: &'s T) -> Self {
         GenRef::gen_from_shared(reference, Shared::mutability())
     }
@@ -370,7 +370,7 @@ impl<'s, T: ?Sized> From<&'s T> for GenRef<'s, Shared, T> {
 ///
 /// To create a generic `GenRef<'_, M, T>`, use `gen_from_mut` or `gen_from_mut_downgrading`.
 impl<'s, T: ?Sized> From<&'s mut T> for GenRef<'s, Mutable, T> {
-    #[inline(always)]
+    #[inline]
     fn from(reference: &'s mut T) -> Self {
         GenRef::gen_from_mut(reference, Mutable::mutability())
     }
@@ -379,7 +379,7 @@ impl<'s, T: ?Sized> From<&'s mut T> for GenRef<'s, Mutable, T> {
 /// This is available in a generic context.
 impl<M: Mutability, T: ?Sized> Deref for GenRef<'_, M, T> {
     type Target = T;
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &Self::Target {
         let ptr = GenRef::as_ptr(self);
 
@@ -393,7 +393,7 @@ impl<M: Mutability, T: ?Sized> Deref for GenRef<'_, M, T> {
 ///
 /// To get mutable access to the value, call `reborrow` followed by `gen_into_mut` (this requires proving that `M` is mutable).
 impl<T: ?Sized> DerefMut for GenRef<'_, Mutable, T> {
-    #[inline(always)]
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         GenRef::into_mut(GenRef::reborrow(self))
     }
@@ -402,7 +402,7 @@ impl<T: ?Sized> DerefMut for GenRef<'_, Mutable, T> {
 /// This is only implemented when `M = Shared`, and is not available for references with generic mutablity.
 impl<T: ?Sized> Clone for GenRef<'_, Shared, T> {
     /// Copies the reference. This does not call `clone` on the pointed-to value.
-    #[inline(always)]
+    #[inline]
     fn clone(&self) -> Self {
         *self
     }
@@ -411,21 +411,21 @@ impl<T: ?Sized> Clone for GenRef<'_, Shared, T> {
 impl<T: ?Sized> Copy for GenRef<'_, Shared, T> {}
 
 impl<M: Mutability, T: ?Sized> Borrow<T> for GenRef<'_, M, T> {
-    #[inline(always)]
+    #[inline]
     fn borrow(&self) -> &T {
         self
     }
 }
 /// This is only implemented when `M = Mutable`, and is not available for references with generic mutablity.
 impl<T: ?Sized> BorrowMut<T> for GenRef<'_, Mutable, T> {
-    #[inline(always)]
+    #[inline]
     fn borrow_mut(&mut self) -> &mut T {
         self
     }
 }
 
 impl<M: Mutability, T: ?Sized> fmt::Pointer for GenRef<'_, M, T> {
-    #[inline(always)]
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.ptr.fmt(f)
     }

@@ -36,7 +36,7 @@ pub enum Shared {}
 
 // SAFETY: `mutability()` does return `MutabilityEnum::Shared(IsShared<Shared>)`
 unsafe impl Mutability for Shared {
-    #[inline(always)]
+    #[inline]
     fn mutability() -> MutabilityEnum<Self> {
         // This is not a recursive call, but a call to the inherent method.
         #[deny(unconditional_recursion)]
@@ -46,7 +46,7 @@ unsafe impl Mutability for Shared {
     }
 }
 impl Shared {
-    #[inline(always)]
+    #[inline]
     /// This method returns a proof for the shared-ness of `Shared`.
     /// Note: this method shadows `<Shared as Mutability>::mutability()`, which returns the same proof wrapped in `MutabilityEnum::Shared`.
     /// If you have access to this method (i.e. in non-generic contexts), you should not need `<Shared as Mutability>::mutability()`.
@@ -65,7 +65,7 @@ pub enum Mutable {}
 
 // SAFETY: `mutability()` does return `MutabilityEnum::Mutable(IsMutable<Mutable>)`
 unsafe impl Mutability for Mutable {
-    #[inline(always)]
+    #[inline]
     fn mutability() -> MutabilityEnum<Self> {
         // This is not a recursive call, but a call to the inherent method.
         #[deny(unconditional_recursion)]
@@ -75,7 +75,7 @@ unsafe impl Mutability for Mutable {
     }
 }
 impl Mutable {
-    #[inline(always)]
+    #[inline]
     /// This method returns a proof for the mutable-ness of `Mutable`.
     /// Note: this method shadows `<Mutable as Mutability>::mutability()`, which returns the same proof wrapped in `MutabilityEnum::Mutable`.
     /// If you have access to this method (i.e. in non-generic contexts), you should not need `<Mutable as Mutability>::mutability()`.
@@ -94,7 +94,7 @@ impl Mutable {
 pub struct IsMutable<M: Mutability>(PhantomData<M>);
 
 impl<M: Mutability> IsMutable<M> {
-    #[inline(always)]
+    #[inline]
     // SAFETY: `M` must be `Mutable`
     pub(crate) unsafe fn new() -> Self {
         IsMutable(PhantomData)
@@ -110,7 +110,7 @@ impl<M: Mutability> IsMutable<M> {
 pub struct IsShared<M: Mutability>(PhantomData<M>);
 
 impl<M: Mutability> IsShared<M> {
-    #[inline(always)]
+    #[inline]
     // SAFETY: `M` must be `Shared`
     pub(crate) unsafe fn new() -> Self {
         IsShared(PhantomData)
