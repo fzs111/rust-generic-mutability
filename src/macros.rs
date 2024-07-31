@@ -35,6 +35,7 @@ macro_rules! gen_mut {
     ($m:ty => $code:expr) => {
         match <$m as $crate::Mutability>::mutability() {
             $crate::MutabilityEnum::Shared(proof) => {
+                #[allow(unused_macros)]
                 macro_rules! into_gen {
                     () => {
                         |genref| $crate::GenRef::gen_from_shared(genref, proof)
@@ -46,6 +47,7 @@ macro_rules! gen_mut {
                         $crate::GenRef::gen_from_shared($genref, proof)
                     };
                 }
+                #[allow(unused_macros)]
                 macro_rules! from_gen {
                     () => {
                         |genref| $crate::GenRef::gen_into_shared(genref, proof)
@@ -69,6 +71,7 @@ macro_rules! gen_mut {
                 $code
             }
             $crate::MutabilityEnum::Mutable(proof) => {
+                #[allow(unused_macros)]
                 macro_rules! into_gen {
                     () => {
                         |genref| $crate::GenRef::gen_from_mut(genref, proof)
@@ -80,6 +83,7 @@ macro_rules! gen_mut {
                         $crate::GenRef::gen_from_mut($genref, proof)
                     };
                 }
+                #[allow(unused_macros)]
                 macro_rules! from_gen {
                     () => {
                         |genref| $crate::GenRef::gen_into_mut(genref, proof)
