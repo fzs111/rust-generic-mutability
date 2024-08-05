@@ -18,10 +18,13 @@
 //!
 //! The main items of this crate are the `GenRef` struct, which represents a safe reference (like `&` and `&mut`) that is generic over mutability; and the `Mutability` trait, which is used as a bound on *generic mutability parameters*.
 
+mod conv_traits;
+mod gen_struct;
 mod genref;
 mod macros;
 mod mutability;
 
+pub use conv_traits::{GenFrom, GenInto};
 pub use genref::genref_methods::GenRefMethods;
 pub use genref::GenRef;
 pub use mutability::{IsMutable, IsShared, Mutability, MutabilityEnum, Mutable, Shared};

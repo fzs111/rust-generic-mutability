@@ -4,6 +4,7 @@ use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
 
+use crate::conv_traits::{GenFrom, GenInto};
 use crate::mutability::{IsMutable, IsShared, Mutability, Mutable, Shared};
 
 pub mod genref_methods;
@@ -437,3 +438,24 @@ impl<M: Mutability, T: ?Sized> fmt::Pointer for GenRef<'_, M, T> {
 unsafe impl<M: Mutability, T: ?Sized> Send for GenRef<'_, M, T> where T: Send + Sync {}
 // SAFETY: `GenRef` behaves like a reference, and both `&T` and `&mut T` implement `Sync` if `T` is `Sync`
 unsafe impl<M: Mutability, T: ?Sized> Sync for GenRef<'_, M, T> where T: Sync {}
+
+impl<'s, M: Mutability, T> GenInto<M> for GenRef<'s, M, T> {
+    type Shared = &'s T;
+    type Mutable = &'s mut T;
+
+    fn into_shared(self, proof: IsShared<M>) -> Self::Shared {
+        GenRef::gen_into_shared(self, proof)
+    }
+    fn into_mut(self, proof: IsMutable<M>) -> Self::Mutable {
+        GenRef::gen_into_mut(self, proof)
+    }
+}
+
+impl<'s, M: Mutability, T> GenFrom<M, &'s T, &'s mut T> for GenRef<'s, M, T> {
+    fn from_shared(from: &'s T, proof: IsShared<M>) -> Self {
+        GenRef::gen_from_shared(from, proof)
+    }
+    fn from_mut(from: &'s mut T, proof: IsMutable<M>) -> Self {
+        GenRef::gen_from_mut(from, proof)
+    }
+}
