@@ -122,19 +122,23 @@ macro_rules! __unwrap{
 ///
 /// Returns a `GenRef` to the field. Accessing nested fields is supported.
 ///
-/// The receiver (the expression returning `GenRef`) must be a single token (an identifier) or it must be wrapped in parentheses.
+/// The receiver (the expression returning `GenRef`) must be a single token (an identifier) or it must be wrapped in braces or parens.
+///
+/// Also note that the receiver must be the first token, braces can **not** be used to change that.
 ///
 /// Examples:
 ///
 /// ```rust, ignore
 /// field!(&gen genref.field)
 /// field!(&gen genref.field1.2.field3[4])
-/// field!(&gen (obtain_genref()).field)
-/// field!(&gen (container.genref).field)
+/// field!(&gen {obtain_genref()}.field)
+/// field!(&gen {container.genref}.field)
 /// ```
 #[macro_export]
 macro_rules! field {
     (&gen $genref:tt $($field:tt)+) => {
+        #[allow(unused_braces)]
+        #[allow(unused_parens)]
         $crate::GenRef::map($genref, |r| & r $($field)+, |r| &mut r $($field)+)
     };
 }
